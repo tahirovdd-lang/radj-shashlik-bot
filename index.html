@@ -7,75 +7,20 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 10px;
-    }
-
-    h2 {
-      text-align: center;
-    }
-
-    .card {
-      background: #fff;
-      border-radius: 10px;
-      padding: 15px;
-      margin-bottom: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-
-    .title {
-      font-size: 18px;
-      font-weight: bold;
-    }
-
-    .price {
-      color: green;
-      margin: 5px 0;
-    }
-
-    .controls {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    button {
-      padding: 8px 12px;
-      font-size: 16px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .minus {
-      background: #ddd;
-    }
-
-    .plus {
-      background: #4CAF50;
-      color: white;
-    }
-
-    .order-btn {
-      width: 100%;
-      background: #0088cc;
-      color: white;
-      font-size: 18px;
-      margin-top: 15px;
-      padding: 12px;
-    }
-
-    .total {
-      text-align: center;
-      font-size: 18px;
-      margin-top: 10px;
-    }
+    body { font-family: Arial; padding: 10px; background: #f5f5f5; }
+    h2 { text-align: center; }
+    .card { background: #fff; border-radius:10px; padding:15px; margin-bottom:10px; }
+    .title { font-weight:bold; }
+    .price { color:green; margin:5px 0; }
+    .controls { display:flex; gap:10px; align-items:center; }
+    button { padding:8px 12px; border:none; border-radius:6px; cursor:pointer; }
+    .minus { background:#ddd; }
+    .plus { background:#4CAF50; color:white; }
+    .order-btn { width:100%; background:#0088cc; color:white; font-size:18px; margin-top:15px; padding:12px; }
+    .total { text-align:center; font-size:18px; margin-top:10px; }
+    input { padding:8px; width:100%; margin-top:10px; margin-bottom:10px; border-radius:6px; border:1px solid #ccc; }
   </style>
 </head>
-
 <body>
 
 <h2>🍽 Меню Radj Shashlik</h2>
@@ -104,49 +49,42 @@
   💰 Итого: <span id="total">0</span> сум
 </div>
 
+<!-- поле для телефона -->
+<input type="tel" id="phone" placeholder="📱 Введите ваш номер телефона" />
+
 <button class="order-btn" onclick="sendOrder()">🛒 Оформить заказ</button>
 
 <script>
-  const tg = Telegram.WebApp;
-  tg.ready(); // 🔴 КРИТИЧЕСКИ ВАЖНО
-
-  const prices = {
-    "Шашлык куриный": 45000,
-    "Шашлык говяжий": 60000
-  };
-
+  const prices = { "Шашлык куриный": 45000, "Шашлык говяжий": 60000 };
   const cart = {};
   let total = 0;
 
   function change(name, delta) {
     cart[name] = (cart[name] || 0) + delta;
-    if (cart[name] < 0) cart[name] = 0;
-
+    if(cart[name] < 0) cart[name] = 0;
     document.getElementById("qty-" + name).innerText = cart[name];
     recalc();
   }
 
   function recalc() {
     total = 0;
-    for (let item in cart) {
-      total += cart[item] * prices[item];
-    }
+    for(let item in cart) total += cart[item]*prices[item];
     document.getElementById("total").innerText = total;
   }
 
   function sendOrder() {
-    const data = {
+    const phone = document.getElementById("phone").value.trim();
+    if(!phone) { alert("Введите номер телефона!"); return; }
+
+    Telegram.WebApp.sendData(JSON.stringify({
       order: cart,
-      total: total
-    };
+      total: total,
+      phone: phone
+    }));
 
-    tg.sendData(JSON.stringify(data));
-
-    // ⛔ НЕ закрываем пока тестируем
-    // tg.close();
+    Telegram.WebApp.close();
   }
 </script>
 
 </body>
 </html>
-
