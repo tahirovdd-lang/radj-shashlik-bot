@@ -27,29 +27,28 @@ input,select{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px
 </head>
 
 <body>
+
 <h2>🍽 Radj Shashlik</h2>
 
 <!-- КАТЕГОРИИ -->
 <div style="text-align:center">
-  <button class="category-btn active" onclick="showCategory('Шашлык')">Шашлык</button>
-  <button class="category-btn" onclick="showCategory('Первые блюда')">Первые блюда</button>
-  <button class="category-btn" onclick="showCategory('Национальные блюда')">Национальные</button>
-  <button class="category-btn" onclick="showCategory('Салаты')">Салаты</button>
-  <button class="category-btn" onclick="showCategory('Напитки')">Напитки</button>
-  <button class="category-btn" onclick="showCategory('Хлеб')">Хлеб</button>
+  <button class="category-btn active" onclick="showCategory('Шашлык', this)">Шашлык</button>
+  <button class="category-btn" onclick="showCategory('Первые блюда', this)">Первые блюда</button>
+  <button class="category-btn" onclick="showCategory('Национальные блюда', this)">Национальные</button>
+  <button class="category-btn" onclick="showCategory('Салаты', this)">Салаты</button>
+  <button class="category-btn" onclick="showCategory('Напитки', this)">Напитки</button>
+  <button class="category-btn" onclick="showCategory('Хлеб', this)">Хлеб</button>
 </div>
 
-<!-- ТОВАРЫ -->
 <div id="menu"></div>
 
 <!-- КОРЗИНА -->
 <div class="cart">
 <h3>🛒 Корзина</h3>
-<div id="cart-items">Пусто</div>
+<div id="cart-items">Корзина пуста</div>
 <div class="total">💰 Итого: <span id="total">0</span> сум</div>
 </div>
 
-<!-- ДОСТАВКА -->
 <select id="delivery" onchange="toggleAddress()">
   <option value="delivery">🚚 Доставка</option>
   <option value="pickup">🏃 Самовывоз</option>
@@ -62,12 +61,10 @@ input,select{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px
 
 <script>
 Telegram.WebApp.ready();
+Telegram.WebApp.expand();
 
 const menuData = {
- "Шашлык": [
-  ["Шашлык куриный",45000],
-  ["Шашлык говяжий",60000]
- ],
+ "Шашлык":[["Шашлык куриный",45000],["Шашлык говяжий",60000]],
  "Первые блюда":[["Шурпа",35000]],
  "Национальные блюда":[["Плов",50000]],
  "Салаты":[["Оливье",30000]],
@@ -78,18 +75,21 @@ const menuData = {
 const cart = {};
 let currentCategory = "Шашлык";
 
-function showCategory(cat){
+const deliverySelect = document.getElementById("delivery");
+const addressInput = document.getElementById("address");
+const phoneInput = document.getElementById("phone");
+
+function showCategory(cat, btn){
  currentCategory = cat;
  document.querySelectorAll(".category-btn").forEach(b=>b.classList.remove("active"));
- event.target.classList.add("active");
+ btn.classList.add("active");
  renderMenu();
 }
 
 function renderMenu(){
- const menu = document.getElementById("menu");
+ const menu=document.getElementById("menu");
  menu.innerHTML="";
- menuData[currentCategory].forEach(item=>{
-  const name=item[0], price=item[1];
+ menuData[currentCategory].forEach(([name,price])=>{
   cart[name]=cart[name]||0;
   menu.innerHTML+=`
    <div class="card">
@@ -123,38 +123,22 @@ function renderCart(){
    div.innerHTML+=`<div class="cart-item"><span>${i} × ${cart[i]}</span><span>${cart[i]*price} сум</span></div>`;
   }
  }
- if(empty)div.innerText="Корзина пуста";
+ if(empty) div.innerText="Корзина пуста";
  document.getElementById("total").innerText=total;
 }
 
 function findPrice(name){
  for(let c in menuData)
   for(let i of menuData[c])
-   if(i[0]==name)return i[1];
+   if(i[0]===name)return i[1];
  return 0;
 }
 
 function toggleAddress(){
- document.getElementById("address").style.display=
-  delivery.value==="delivery"?"block":"none";
+ addressInput.style.display = deliverySelect.value==="delivery"?"block":"none";
 }
 
 function sendOrder(){
  const phone=phoneInput.value.trim();
- if(!phone)return alert("Введите телефон");
- Telegram.WebApp.sendData(JSON.stringify({
-  order:cart,
-  total:document.getElementById("total").innerText,
-  phone:phone,
-  delivery:delivery.value,
-  address:address.value
- }));
- Telegram.WebApp.close();
-}
+ const total=Number(doc
 
-const phoneInput=document.getElementById("phone");
-renderMenu();
-</script>
-
-</body>
-</html>
