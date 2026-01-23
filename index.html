@@ -107,6 +107,9 @@
 <button class="order-btn" onclick="sendOrder()">🛒 Оформить заказ</button>
 
 <script>
+  const tg = Telegram.WebApp;
+  tg.ready(); // 🔴 КРИТИЧЕСКИ ВАЖНО
+
   const prices = {
     "Шашлык куриный": 45000,
     "Шашлык говяжий": 60000
@@ -132,11 +135,15 @@
   }
 
   function sendOrder() {
-    Telegram.WebApp.sendData(JSON.stringify({
+    const data = {
       order: cart,
       total: total
-    }));
-    Telegram.WebApp.close();
+    };
+
+    tg.sendData(JSON.stringify(data));
+
+    // ⛔ НЕ закрываем пока тестируем
+    // tg.close();
   }
 </script>
 
