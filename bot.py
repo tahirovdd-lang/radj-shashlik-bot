@@ -10,6 +10,9 @@ ADMIN_ID = 6013591658
 
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSG6M86JhMZr34RI1ajn3xZhEJDXsbX44tiXGiW-YtXLGY9X2T59HBpHs2CrRuuy49/exec"
 
+# 🔴 CLICK TEST BOT
+CLICK_TEST_BOT = "https://t.me/CLICKtest"
+
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
@@ -97,7 +100,7 @@ async def get_order(message: types.Message):
                 "phone": phone,
                 "delivery": delivery,
                 "address": address,
-                "payment": payment_text,  # 🔴 PAYMENT
+                "payment": payment_text,
                 "comment": comment,
                 "items": items_text,
                 "total": total
@@ -107,15 +110,31 @@ async def get_order(message: types.Message):
     except Exception as e:
         logging.error(f"Google Sheets error: {e}")
 
-    # 👉 Ответ пользователю
+    # 🔴 CLICK TEST PAYMENT (ШАГ 4)
+    if payment == "click":
+        pay_keyboard = types.InlineKeyboardMarkup()
+        pay_keyboard.add(
+            types.InlineKeyboardButton(
+                text="💳 Оплатить через CLICK (тест)",
+                url=CLICK_TEST_BOT
+            )
+        )
+
+        await message.answer(
+            "💳 Заказ принят!\nДля завершения нажмите кнопку ниже и произведите тестовую оплату через CLICK.",
+            reply_markup=pay_keyboard
+        )
+        return
+
+    # 👉 Ответ пользователю (наличные)
     replies = {
         "ru": {
             "cash": "✅ Заказ принят! Оплата наличными при получении.",
-            "click": "🕒 Заказ принят! Сейчас вы будете перенаправлены к оплате через CLICK."
+            "click": "🕒 Заказ принят! CLICK оплата ожидается."
         },
         "uz": {
             "cash": "✅ Buyurtma qabul qilindi! To‘lov naqd.",
-            "click": "🕒 Buyurtma qabul qilindi! CLICK orqali to‘lov kutilmoqda."
+            "click": "🕒 Buyurtma qabul qilindi! CLICK to‘lovi kutilmoqda."
         },
         "en": {
             "cash": "✅ Order received! Cash payment on delivery.",
@@ -130,6 +149,7 @@ async def get_order(message: types.Message):
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
+
 
 
 
