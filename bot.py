@@ -1,5 +1,3 @@
-aiogram==2.25.1
-aiohttp
 import logging
 import json
 import os
