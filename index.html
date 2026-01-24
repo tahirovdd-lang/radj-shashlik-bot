@@ -10,28 +10,20 @@
 body{font-family:Arial;background:#f5f5f5;padding:10px;margin:0}
 h2,h3{text-align:center}
 .lang-btn,.category-btn{
-  padding:8px 12px;
-  margin:3px;
-  border:none;
-  border-radius:6px;
-  background:#ddd;
-  cursor:pointer
+  padding:8px 12px;margin:3px;border:none;border-radius:6px;
+  background:#ddd;cursor:pointer
 }
 .lang-btn.active,.category-btn.active{
-  background:#0088cc;
-  color:#fff
+  background:#0088cc;color:#fff
 }
 .card{background:#fff;border-radius:10px;padding:15px;margin-bottom:10px}
-.title{font-weight:bold}
-.price{color:green;margin:5px 0}
 .controls{display:flex;gap:10px;align-items:center}
 .plus{background:#4CAF50;color:white}
 .minus{background:#ddd}
 .cart{background:#fff;border-radius:10px;padding:15px;margin-top:10px}
 .cart-item{display:flex;justify-content:space-between}
-.total{text-align:center;font-size:18px;font-weight:bold;margin-top:10px}
-input,select{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px solid #ccc}
-.order-btn{width:100%;background:#0088cc;color:white;font-size:18px;padding:12px;margin-top:10px}
+input,select,button{width:100%;padding:10px;margin-top:8px}
+.order-btn{background:#0088cc;color:white;font-size:18px}
 </style>
 </head>
 
@@ -39,19 +31,14 @@ input,select{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px
 
 <h2>🍽 Radj Shashlik</h2>
 
-<div style="text-align:center">
-  <button class="lang-btn active" onclick="setLang('ru',this)">🇷🇺 RU</button>
-  <button class="lang-btn" onclick="setLang('uz',this)">🇺🇿 UZ</button>
-  <button class="lang-btn" onclick="setLang('en',this)">🇬🇧 EN</button>
-</div>
-
-<div id="categories" style="text-align:center;margin-top:10px"></div>
+<div id="lang"></div>
+<div id="categories"></div>
 <div id="menu"></div>
 
 <div class="cart">
-<h3 id="cart-title">🛒 Корзина</h3>
-<div id="cart-items">Корзина пуста</div>
-<div class="total">💰 <span id="total-label">Итого</span>: <span id="total">0</span> сум</div>
+  <h3 id="cart-title">🛒 Корзина</h3>
+  <div id="cart-items">Корзина пуста</div>
+  <div><b>Итого:</b> <span id="total">0</span> сум</div>
 </div>
 
 <select id="delivery">
@@ -59,10 +46,10 @@ input,select{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px
   <option value="pickup">🏃 Самовывоз</option>
 </select>
 
-<input type="text" id="address" placeholder="📍 Адрес доставки">
-<input type="tel" id="phone" placeholder="📱 Телефон">
+<input id="address" placeholder="Адрес доставки">
+<input id="phone" placeholder="Телефон">
 
-<button class="order-btn" id="order-btn">✅ Оформить заказ</button>
+<button id="order" class="order-btn">Оформить заказ</button>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
@@ -71,18 +58,14 @@ document.addEventListener("DOMContentLoaded", () => {
   tg.ready();
   tg.expand();
 
-  const delivery = document.getElementById("delivery");
-  const address = document.getElementById("address");
-  const phone = document.getElementById("phone");
-
   let lang = "ru";
   let currentCategory = "Шашлык";
   const cart = {};
 
   const texts = {
-    ru:{cart:"🛒 Корзина",empty:"Корзина пуста",total:"Итого",order:"✅ Оформить заказ"},
-    uz:{cart:"🛒 Savat",empty:"Savat bo‘sh",total:"Jami",order:"✅ Buyurtma berish"},
-    en:{cart:"🛒 Cart",empty:"Cart is empty",total:"Total",order:"✅ Place order"}
+    ru:{cart:"Корзина",empty:"Корзина пуста",order:"Оформить заказ"},
+    uz:{cart:"Savat",empty:"Savat bo‘sh",order:"Buyurtma berish"},
+    en:{cart:"Cart",empty:"Cart is empty",order:"Place order"}
   };
 
   const menuData = {
@@ -94,62 +77,93 @@ document.addEventListener("DOMContentLoaded", () => {
     "Хлеб":[["Лепёшка",5000]]
   };
 
-  window.setLang = (l,btn)=>{
-    lang=l;
-    document.querySelectorAll(".lang-btn").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById("cart-title").innerText=texts[lang].cart;
-    document.getElementById("total-label").innerText=texts[lang].total;
-    document.getElementById("order-btn").innerText=texts[lang].order;
-    renderCart();
-  };
+  const langDiv = document.getElementById("lang");
+  ["ru","uz","en"].forEach(l=>{
+    const b=document.createElement("button");
+    b.className="lang-btn"+(l==="ru"?" active":"");
+    b.textContent=l.toUpperCase();
+    b.addEventListener("click",()=>{
+      lang=l;
+      document.querySelectorAll(".lang-btn").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+      renderCart();
+    });
+    langDiv.appendChild(b);
+  });
 
   function renderCategories(){
     const div=document.getElementById("categories");
     div.innerHTML="";
     Object.keys(menuData).forEach(c=>{
-      div.innerHTML+=`<button class="category-btn ${c===currentCategory?'active':''}" onclick="selectCategory('${c}',this)">${c}</button>`;
+      const b=document.createElement("button");
+      b.className="category-btn"+(c===currentCategory?" active":"");
+      b.textContent=c;
+      b.addEventListener("click",()=>{
+        currentCategory=c;
+        renderCategories();
+        renderMenu();
+      });
+      div.appendChild(b);
     });
   }
-
-  window.selectCategory=(c,btn)=>{
-    currentCategory=c;
-    document.querySelectorAll(".category-btn").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    renderMenu();
-  };
 
   function renderMenu(){
     const menu=document.getElementById("menu");
     menu.innerHTML="";
-    menuData[currentCategory].forEach(i=>{
-      cart[i[0]]=cart[i[0]]||0;
-      menu.innerHTML+=`
-      <div class="card">
-        <div class="title">${i[0]}</div>
-        <div class="price">${i[1]} сум</div>
-        <div class="controls">
-          <button class="minus" onclick="change('${i[0]}',-1)">−</button>
-          <span>${cart[i[0]]}</span>
-          <button class="plus" onclick="change('${i[0]}',1)">+</button>
-        </div>
-      </div>`;
+    menuData[currentCategory].forEach(([name,price])=>{
+      if(!cart[name]) cart[name]=0;
+
+      const card=document.createElement("div");
+      card.className="card";
+      card.innerHTML=`<b>${name}</b><br>${price} сум`;
+
+      const minus=document.createElement("button");
+      minus.textContent="−";
+      minus.onclick=()=>{cart[name]=Math.max(0,cart[name]-1);renderMenu();renderCart();};
+
+      const plus=document.createElement("button");
+      plus.textContent="+";
+      plus.onclick=()=>{cart[name]++;renderMenu();renderCart();};
+
+      card.append(minus,document.createTextNode(" "+cart[name]+" "),plus);
+      menu.appendChild(card);
     });
   }
-
-  window.change=(n,d)=>{
-    cart[n]+=d;
-    if(cart[n]<0)cart[n]=0;
-    renderMenu();
-    renderCart();
-  };
 
   function renderCart(){
     const div=document.getElementById("cart-items");
     div.innerHTML="";
-    let total=0,empty=true;
+    let total=0,has=false;
     for(let i in cart){
       if(cart[i]>0){
+        has=true;
+        const price=menuData[Object.keys(menuData).find(c=>menuData[c].some(x=>x[0]==i))].find(x=>x[0]==i)[1];
+        total+=cart[i]*price;
+        div.innerHTML+=`<div>${i} × ${cart[i]}</div>`;
+      }
+    }
+    if(!has) div.textContent=texts[lang].empty;
+    document.getElementById("total").textContent=total;
+    document.getElementById("order").textContent=texts[lang].order;
+  }
+
+  document.getElementById("order").onclick=()=>{
+    tg.sendData(JSON.stringify({
+      order:cart,
+      phone:document.getElementById("phone").value,
+      total:document.getElementById("total").textContent
+    }));
+    tg.close();
+  };
+
+  renderCategories();
+  renderMenu();
+  renderCart();
+});
+</script>
+
+</body>
+</html>
 
 
 
