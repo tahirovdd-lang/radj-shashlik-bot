@@ -3,211 +3,215 @@
 <head>
 <meta charset="UTF-8">
 <title>Radj Shashlik</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-*{box-sizing:border-box}
 body{
-  margin:0;
-  padding:10px 10px 110px;
-  font-family:Arial,sans-serif;
-  background:#f4f4f4;
+    margin:0;
+    font-family: Arial, sans-serif;
+    background:#f2f4f7;
 }
-.logo{display:block;margin:5px auto;width:90px;border-radius:14px}
-h2{text-align:center;margin:8px 0}
-
+.header{
+    padding:15px;
+    text-align:center;
+    font-size:22px;
+    font-weight:bold;
+}
 .langs, .types, .categories{
-  display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px
+    display:flex;
+    gap:10px;
+    padding:10px;
+    overflow-x:auto;
 }
-button{
-  border:none;padding:8px 14px;border-radius:20px;font-weight:bold
+.btn{
+    padding:10px 14px;
+    border-radius:14px;
+    background:#fff;
+    border:none;
+    font-size:14px;
+    cursor:pointer;
+    white-space:nowrap;
 }
-.active{background:#0088cc;color:#fff}
-.gray{background:#e0e0e0}
-
+.btn.active{
+    background:#4a90e2;
+    color:#fff;
+}
+.input{
+    margin:10px;
+    padding:12px;
+    width:calc(100% - 20px);
+    border-radius:14px;
+    border:none;
+    font-size:14px;
+}
+.products{
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap:12px;
+    padding:10px;
+}
 .card{
-  background:#fff;border-radius:14px;padding:12px;margin-bottom:10px;
-  display:flex;justify-content:space-between;align-items:center
+    background:#fff;
+    border-radius:16px;
+    padding:10px;
+    text-align:center;
 }
-.price{color:#27ae60;font-weight:bold}
-.ctrl{display:flex;gap:8px;align-items:center}
-.ctrl button{width:34px;height:34px;border-radius:50%;font-size:18px}
-
+.img{
+    width:100%;
+    height:100px;
+    background:#e1e5ea;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:12px;
+    color:#777;
+}
+.price{
+    margin-top:6px;
+    font-weight:bold;
+    color:#2e7d32;
+}
+.name{
+    font-size:14px;
+    margin-top:4px;
+}
+.counter{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin-top:6px;
+}
+.counter button{
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    border:none;
+    font-size:18px;
+}
 .cart{
-  background:#fff;border-radius:14px;padding:12px;margin-top:10px
-}
-.cart-item{display:flex;justify-content:space-between;margin:4px 0}
-
-input,textarea{
-  width:100%;padding:10px;margin-top:8px;
-  border-radius:10px;border:1px solid #ccc;font-size:16px
+    background:#fff;
+    margin:10px;
+    padding:12px;
+    border-radius:16px;
 }
 </style>
 </head>
 
 <body>
 
-<img src="logo.png" class="logo">
-<h2>🍽 Radj Shashlik</h2>
+<div class="header">🍢 Radj Shashlik</div>
 
 <div class="langs">
-  <button class="active" onclick="setLang('ru',this)">RU</button>
-  <button class="gray" onclick="setLang('uz',this)">UZ</button>
-  <button class="gray" onclick="setLang('en',this)">EN</button>
+    <button class="btn active" onclick="setLang('ru')">RU</button>
+    <button class="btn" onclick="setLang('uz')">UZ</button>
+    <button class="btn" onclick="setLang('en')">EN</button>
 </div>
 
 <div class="types">
-  <button class="active" onclick="setType('delivery',this)">🚚 Доставка</button>
-  <button class="gray" onclick="setType('pickup',this)">🏃 Самовывоз</button>
+    <button class="btn active" onclick="setType('delivery')">🚚 Доставка</button>
+    <button class="btn" onclick="setType('pickup')">🏃 Самовывоз</button>
 </div>
 
-<input id="address" placeholder="📍 Адрес доставки">
+<input class="input" placeholder="📍 Адрес доставки">
 
-<div class="categories" id="categories"></div>
-<div id="menu"></div>
+<div class="categories" id="cats"></div>
+
+<div class="products" id="products"></div>
 
 <div class="cart">
-  <b id="cartTitle">Корзина</b>
-  <div id="cartItems">Корзина пуста</div>
-  <div><b>Итого:</b> <span id="total">0</span> сум</div>
+    <b>🛒 Корзина:</b> <span id="total">0</span> сум
 </div>
 
-<input id="phone" placeholder="📱 Телефон">
-
 <script>
-const tg = Telegram.WebApp;
-tg.ready(); tg.expand();
+Telegram.WebApp.ready();
 
-let lang='ru', type='delivery', category='';
-const cart={};
+let lang = 'ru';
+let category = 'salads';
+let cart = {};
 
-const catNames={
-  salads:{ru:'Салаты',uz:'Salatlar',en:'Salads'},
-  grill:{ru:'Шашлык',uz:'Shashlik',en:'Grill'},
-  national:{ru:'Национальные блюда',uz:'Milliy taomlar',en:'National'},
-  mangal:{ru:'Блюда на мангале',uz:'Mangal taomlari',en:'Grill plates'},
-  soups:{ru:'Первые блюда',uz:'Sho‘rvalar',en:'Soups'},
-  drinks:{ru:'Напитки',uz:'Ichimliklar',en:'Drinks'},
-  bread:{ru:'Хлеб',uz:'Non',en:'Bread'}
+const CATS = {
+ru:{salads:'🥗 Салаты', kebab:'🔥 Шашлык', national:'🍲 Национальные', grill:'🥩 На мангале', first:'🍜 Первые', drinks:'🥤 Напитки', bread:'🥖 Хлеб'},
+uz:{salads:'🥗 Salatlar', kebab:'🔥 Shashlik', national:'🍲 Milliy', grill:'🥩 Mangal', first:'🍜 Sho‘rva', drinks:'🥤 Ichimliklar', bread:'🥖 Non'},
+en:{salads:'🥗 Salads', kebab:'🔥 Kebab', national:'🍲 National', grill:'🥩 Grill', first:'🍜 Soups', drinks:'🥤 Drinks', bread:'🥖 Bread'}
 };
 
-const menu={
-  salads:[
-    ['Свежий',30000],['Ачичук',30000],['Шакароп',30000],['Цезарь',35000]
-  ],
-  grill:[
-    ['Молотый',28000],['Корейка',40000],['Куриное филе',22000]
-  ],
-  national:[
-    ['Жиз Биз 1кг',260000],['Жиз Биз 0.5кг',130000]
-  ],
-  mangal:[
-    ['Стейк Куринный',100000],['Стейк Тибон',20000]
-  ],
-  soups:[
-    ['Шурпа',35000],['Борщ',25000]
-  ],
-  drinks:[
-    ['Coca Cola 1L',14000],['Чай',5000]
-  ],
-  bread:[
-    ['Лепешка',10000]
-  ]
+const MENU = {
+salads:[
+['Свежий',30000],['Ачичук',30000],['Шакароп',30000],['Цезарь',35000],['Хрустящий баклажан',45000]
+],
+kebab:[
+['Молотый',28000],['Кусковой баранина',30000],['Корейка',40000],['Куриное филе',22000]
+],
+national:[
+['Жиз Биз Баранина 1кг',260000],['Жиз Биз 0.5кг',130000]
+],
+grill:[
+['Стейк куриный',100000],['Баранина с грибами 1кг',200000]
+],
+first:[
+['Шурпа',35000],['Борщ',25000],['Мастава',25000]
+],
+drinks:[
+['Чай',5000],['Coca-Cola 1L',14000],['Fanta 1.5L',18000]
+],
+bread:[
+['Лепешка',10000]
+]
 };
-
-function setLang(l,btn){
-  lang=l;
-  document.querySelectorAll('.langs button').forEach(b=>b.className='gray');
-  btn.className='active';
-  render();
-}
-
-function setType(t,btn){
-  type=t;
-  document.querySelectorAll('.types button').forEach(b=>b.className='gray');
-  btn.className='active';
-  document.getElementById('address').style.display =
-    t==='delivery'?'block':'none';
-}
 
 function renderCats(){
-  const c=document.getElementById('categories');
-  c.innerHTML='';
-  for(let k in catNames){
-    const b=document.createElement('button');
-    b.className=k===category?'active':'gray';
-    b.innerText=catNames[k][lang];
-    b.onclick=()=>{category=k;renderMenu();renderCats()};
-    c.appendChild(b);
-  }
-}
-
-function renderMenu(){
-  const m=document.getElementById('menu');
-  m.innerHTML='';
-  if(!category) return;
-  menu[category].forEach(([n,p])=>{
-    cart[n]=cart[n]||0;
-    m.innerHTML+=`
-    <div class="card">
-      <div><b>${n}</b><div class="price">${p} сум</div></div>
-      <div class="ctrl">
-        <button onclick="chg('${n}',-1)">−</button>
-        <span>${cart[n]}</span>
-        <button onclick="chg('${n}',1)">+</button>
-      </div>
-    </div>`;
-  });
-}
-
-function chg(n,d){
-  cart[n]=Math.max(0,cart[n]+d);
-  renderMenu(); renderCart();
-}
-
-function renderCart(){
-  let t=0,html='';
-  for(let i in cart){
-    if(cart[i]>0){
-      t+=cart[i]*findPrice(i);
-      html+=`<div class="cart-item"><span>${i}×${cart[i]}</span><span>${cart[i]*findPrice(i)}</span></div>`;
+    const c=document.getElementById('cats');
+    c.innerHTML='';
+    for(let k in CATS[lang]){
+        const b=document.createElement('button');
+        b.className='btn'+(k===category?' active':'');
+        b.innerText=CATS[lang][k];
+        b.onclick=()=>{category=k;renderCats();renderProducts();}
+        c.appendChild(b);
     }
-  }
-  document.getElementById('cartItems').innerHTML=html||'Корзина пуста';
-  document.getElementById('total').innerText=t;
-
-  if(t>0){
-    tg.MainButton.setText('Оформить заказ • '+t+' сум');
-    tg.MainButton.show();
-  }else tg.MainButton.hide();
 }
 
-function findPrice(n){
-  for(let k in menu)
-    for(let i of menu[k])
-      if(i[0]==n) return i[1];
-  return 0;
+function renderProducts(){
+    const p=document.getElementById('products');
+    p.innerHTML='';
+    MENU[category].forEach(([name,price])=>{
+        const d=document.createElement('div');
+        d.className='card';
+        d.innerHTML=`
+        <div class="img">Фото</div>
+        <div class="price">${price} сум</div>
+        <div class="name">${name}</div>
+        <div class="counter">
+            <button onclick="add('${name}',${price})">+</button>
+        </div>`;
+        p.appendChild(d);
+    });
 }
 
-tg.MainButton.onClick(()=>{
-  tg.sendData(JSON.stringify({
-    order:cart,
-    phone:document.getElementById('phone').value,
-    delivery:type,
-    address:document.getElementById('address').value,
-    lang:lang,
-    total:document.getElementById('total').innerText
-  }));
-  tg.showPopup({title:'Заказ принят',message:'Мы получили ваш заказ 👍',buttons:[{type:'ok'}]});
-});
-
-function render(){
-  renderCats(); renderMenu(); renderCart();
+function add(name,price){
+    cart[name]=(cart[name]||0)+price;
+    document.getElementById('total').innerText=
+        Object.values(cart).reduce((a,b)=>a+b,0);
 }
 
-render();
+function setLang(l){
+    lang=l;
+    document.querySelectorAll('.langs .btn').forEach(b=>b.classList.remove('active'));
+    event.target.classList.add('active');
+    renderCats();
+}
+
+function setType(t){
+    document.querySelectorAll('.types .btn').forEach(b=>b.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+renderCats();
+renderProducts();
 </script>
+
 </body>
 </html>
 
