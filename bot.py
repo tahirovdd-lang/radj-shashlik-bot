@@ -1,92 +1,59 @@
 import logging
 import json
-import os
 from aiogram import Bot, Dispatcher, executor, types
 
-# ================= НАСТРОЙКИ =================
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = 6013591658
-WEBAPP_URL = "https://tahirovdd-lang.github.io/radj-shashlik-bot/"
-
-if not BOT_TOKEN:
-    raise RuntimeError("BOT_TOKEN не найден в переменных окружения")
+API_TOKEN = "ВАШ_BOT_TOKEN"
+ADMIN_ID = 6013591658  # твой Telegram ID
 
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
+bot = Bot(token=API_TOKEN, parse_mode="HTML")
 dp = Dispatcher(bot)
 
-# ================= /start =================
+
 @dp.message_handler(commands=["start"])
-async def start(message: types.Message):
-    kb = types.InlineKeyboardMarkup()
+async def start(msg: types.Message):
+    kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
     kb.add(
-        types.InlineKeyboardButton(
-            text="🍽 Открыть меню",
-            web_app=types.WebAppInfo(url=WEBAPP_URL)
+        types.KeyboardButton(
+            "🍽 Открыть меню",
+            web_app=types.WebAppInfo(url="https://tahirovdd-lang.github.io/radj-shashlik-bot/")
         )
     )
+    await msg.answer("Добро пожаловать в Radj Shashlik 👋", reply_markup=kb)
 
-    await message.answer(
-        "👋 Добро пожаловать!\n\n"
-        "Нажмите кнопку ниже, чтобы оформить заказ 👇",
-        reply_markup=kb
-    )
 
-# ================= ПРИЁМ ДАННЫХ ИЗ WEBAPP =================
+# 🔥 ВОТ ОН — КЛЮЧЕВОЙ ХЭНДЛЕР
 @dp.message_handler(content_types=types.ContentType.WEB_APP_DATA)
-async def handle_webapp_data(message: types.Message):
-    logging.info(f"📩 WebApp data: {message.web_app_data.data}")
-
+async def webapp_data(msg: types.Message):
     try:
-        data = json.loads(message.web_app_data.data)
+        data = json.loads(msg.web_app_data.data)
+        logging.info(f"📩 WebApp data: {data}")
+
+        order = data.get("order", {})
+        total = data.get("total")
+        phone = data.get("phone")
+
+        text = "🧾 <b>Новый заказ</b>\n\n"
+        for item, count in order.items():
+            if count > 0:
+                text += f"• {item} × {count}\n"
+
+        text += f"\n💰 Итого: {total} сум"
+        text += f"\n📱 Телефон: {phone}"
+
+        # админу
+        await bot.send_message(ADMIN_ID, text)
+
+        # клиенту
+        await msg.answer("✅ Заказ принят! Мы скоро с вами свяжемся.")
+
     except Exception as e:
-        logging.error(f"JSON error: {e}")
-        await message.answer("❌ Ошибка данных заказа")
-        return
+        logging.error(e)
+        await msg.answer("❌ Ошибка при оформлении заказа")
 
-    order = data.get("order", {})
-    phone = data.get("phone", "Не указан")
-    lang = data.get("lang", "ru")
 
-    try:
-        total = int(data.get("total", 0))
-    except ValueError:
-        total = 0
-
-    items = [
-        f"• {name} × {qty}"
-        for name, qty in order.items()
-        if isinstance(qty, int) and qty > 0
-    ]
-
-    if not items or total <= 0:
-        await message.answer("❌ Корзина пуста")
-        return
-
-    items_text = "\n".join(items)
-
-    # ===== АДМИН =====
-    admin_text = (
-        "📥 <b>НОВЫЙ ЗАКАЗ</b>\n\n"
-        f"👤 Клиент ID: <code>{message.from_user.id}</code>\n"
-        f"📞 Телефон: {phone}\n\n"
-        f"{items_text}\n\n"
-        f"💰 <b>Итого:</b> {total} сум"
-    )
-
-    await bot.send_message(ADMIN_ID, admin_text)
-
-    # ===== КЛИЕНТ =====
-    replies = {
-        "ru": "✅ Заказ принят! Мы скоро свяжемся с вами.",
-        "uz": "✅ Buyurtmangiz qabul qilindi! Tez orada bog‘lanamiz.",
-        "en": "✅ Your order has been received! We will contact you soon."
-    }
-
-    await message.answer(replies.get(lang, replies["ru"]))
-
-# ================= ЗАПУСК =================
 if __name__ == "__main__":
-    executor.start_polling(dp)  # ❗ БЕЗ skip_updates
+    executor.start_polling(dp, skip_updates=True)
+
 
