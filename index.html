@@ -140,8 +140,6 @@ body{
 <script>
 Telegram.WebApp.ready();
 
-const ADMIN_ID = 6013591658; // ★ ТВОЙ ID
-
 let lang = 'ru';
 let category = 'salads';
 let type = 'delivery';
@@ -187,15 +185,15 @@ function renderProducts(){
         <div class="price">${price} сум</div>
         <div class="name">${name}</div>
         <div class="counter">
-            <button onclick="change('${name}',${price},-1)">−</button>
+            <button onclick="change('${name}',-1)">−</button>
             <span>${cart[name]}</span>
-            <button onclick="change('${name}',${price},1)">+</button>
+            <button onclick="change('${name}',1)">+</button>
         </div>`;
         p.appendChild(d);
     });
 }
 
-function change(name,price,val){
+function change(name,val){
     cart[name]=Math.max(0,(cart[name]||0)+val);
     renderProducts();
     updateTotal();
@@ -229,14 +227,25 @@ function setType(t){
     document.getElementById('address').style.display = t==='pickup'?'none':'block';
 }
 
+/* ✅ ВОТ ГЛАВНОЕ ИСПРАВЛЕНИЕ */
 function sendOrder(){
-    let text='🧾 Заказ:\n';
-    for(let k in cart) if(cart[k]>0) text+=`${k} x${cart[k]}\n`;
-    text+=`\nТип: ${type}`;
-    if(type==='delivery') text+=`\nАдрес: ${document.getElementById('address').value}`;
+    let order = {};
+    for(let k in cart){
+        if(cart[k] > 0) order[k] = cart[k];
+    }
 
-    Telegram.WebApp.sendData(text);
-    alert('✅ Заказ принят');
+    const data = {
+        order: order,
+        total: document.getElementById('total').innerText,
+        lang: lang,
+        delivery: type === 'delivery' ? 'Доставка' : 'Самовывоз',
+        address: type === 'delivery'
+            ? document.getElementById('address').value
+            : '—'
+    };
+
+    Telegram.WebApp.sendData(JSON.stringify(data));
+    Telegram.WebApp.close();
 }
 
 renderCats();
@@ -245,6 +254,7 @@ renderProducts();
 
 </body>
 </html>
+
 
 
 
