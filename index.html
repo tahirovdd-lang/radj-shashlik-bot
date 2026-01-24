@@ -3,26 +3,128 @@
 <head>
 <meta charset="UTF-8">
 <title>Radj Shashlik</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-body{font-family:Arial;background:#f5f5f5;padding:10px;margin:0}
-h2,h3{text-align:center}
-.lang-btn,.category-btn,button{
-  padding:8px 12px;margin:3px;border:none;border-radius:6px;
-  background:#ddd;cursor:pointer
+*{box-sizing:border-box}
+body{
+  font-family:Arial, sans-serif;
+  background:#f4f4f4;
+  margin:0;
+  padding:12px;
 }
-.lang-btn.active,.category-btn.active{
-  background:#0088cc;color:#fff
+h2,h3{text-align:center;margin:10px 0}
+
+/* 🌍 ЯЗЫК */
+.lang-wrap{
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  margin-bottom:12px;
 }
-.card{background:#fff;border-radius:10px;padding:15px;margin-bottom:10px}
-.controls{display:flex;gap:10px;align-items:center}
-.plus{background:#4CAF50;color:white}
-.cart{background:#fff;border-radius:10px;padding:15px;margin-top:10px}
-.cart-item{display:flex;justify-content:space-between}
-input,select{width:100%;padding:10px;margin-top:8px}
-.order-btn{background:#0088cc;color:white;font-size:18px;width:100%}
+.lang-btn{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 12px;
+  border-radius:20px;
+  border:none;
+  background:#e0e0e0;
+  font-size:14px;
+  cursor:pointer;
+}
+.lang-btn.active{
+  background:#0088cc;
+  color:#fff;
+}
+
+/* 🍽 КАТЕГОРИИ */
+.categories{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding-bottom:6px;
+  margin-bottom:12px;
+}
+.categories::-webkit-scrollbar{display:none}
+.category-btn{
+  white-space:nowrap;
+  padding:8px 14px;
+  border-radius:18px;
+  border:none;
+  background:#fff;
+  box-shadow:0 1px 4px rgba(0,0,0,.1);
+  font-size:14px;
+}
+.category-btn.active{
+  background:#0088cc;
+  color:#fff;
+}
+
+/* 🧾 КАРТОЧКИ */
+.card{
+  background:#fff;
+  border-radius:12px;
+  padding:12px;
+  margin-bottom:10px;
+  box-shadow:0 1px 4px rgba(0,0,0,.1);
+}
+.card-title{font-weight:bold}
+.card-price{color:green;margin:4px 0}
+.controls{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.controls button{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  border:none;
+  font-size:18px;
+}
+.plus{background:#4CAF50;color:#fff}
+.minus{background:#ddd}
+
+/* 🛒 КОРЗИНА */
+.cart{
+  background:#fff;
+  border-radius:12px;
+  padding:12px;
+  margin-top:12px;
+}
+.cart-item{
+  display:flex;
+  justify-content:space-between;
+  font-size:14px;
+}
+.total{
+  text-align:center;
+  font-size:18px;
+  font-weight:bold;
+  margin-top:8px;
+}
+
+/* 📦 ФОРМА */
+input,select{
+  width:100%;
+  padding:12px;
+  margin-top:8px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  font-size:15px;
+}
+.order-btn{
+  width:100%;
+  padding:14px;
+  margin-top:12px;
+  border:none;
+  border-radius:12px;
+  background:#0088cc;
+  color:#fff;
+  font-size:18px;
+}
 </style>
 </head>
 
@@ -30,14 +132,20 @@ input,select{width:100%;padding:10px;margin-top:8px}
 
 <h2>🍽 Radj Shashlik</h2>
 
-<div id="lang"></div>
-<div id="categories"></div>
+<!-- 🌍 ЯЗЫК -->
+<div class="lang-wrap" id="lang"></div>
+
+<!-- 🍽 КАТЕГОРИИ -->
+<div class="categories" id="categories"></div>
+
+<!-- 🧾 МЕНЮ -->
 <div id="menu"></div>
 
+<!-- 🛒 КОРЗИНА -->
 <div class="cart">
   <h3 id="cart-title">🛒 Корзина</h3>
   <div id="cart-items">Корзина пуста</div>
-  <div><b>Итого:</b> <span id="total">0</span> сум</div>
+  <div class="total">💰 <span id="total">0</span> сум</div>
 </div>
 
 <select id="delivery">
@@ -45,132 +153,132 @@ input,select{width:100%;padding:10px;margin-top:8px}
   <option value="pickup">🏃 Самовывоз</option>
 </select>
 
-<input id="address" placeholder="Адрес доставки">
-<input id="phone" placeholder="Телефон">
+<input id="address" placeholder="📍 Адрес доставки">
+<input id="phone" placeholder="📱 Телефон">
 
-<button id="order" type="button" class="order-btn">Оформить заказ</button>
+<button id="order" class="order-btn">Оформить заказ</button>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded",()=>{
 
-  const tg = Telegram.WebApp;
-  tg.ready();
-  tg.expand();
+const tg = Telegram.WebApp;
+tg.ready();
+tg.expand();
 
-  let lang = "ru";
-  let currentCategory = "Шашлык";
-  const cart = {};
+let lang="ru";
+let currentCategory="Шашлык";
+const cart={};
 
-  const texts = {
-    ru:{cart:"Корзина",empty:"Корзина пуста",order:"Оформить заказ"},
-    uz:{cart:"Savat",empty:"Savat bo‘sh",order:"Buyurtma berish"},
-    en:{cart:"Cart",empty:"Cart is empty",order:"Place order"}
-  };
+const texts={
+ ru:{cart:"Корзина",empty:"Корзина пуста",order:"Оформить заказ"},
+ uz:{cart:"Savat",empty:"Savat bo‘sh",order:"Buyurtma berish"},
+ en:{cart:"Cart",empty:"Cart is empty",order:"Place order"}
+};
 
-  const menuData = {
-    "Шашлык":[["Шашлык куриный",45000],["Шашлык говяжий",60000]],
-    "Первые блюда":[["Шурпа",35000]],
-    "Национальные блюда":[["Плов",50000]],
-    "Салаты":[["Оливье",30000]],
-    "Напитки":[["Кола 1л",15000]],
-    "Хлеб":[["Лепёшка",5000]]
-  };
+const langs=[
+ {id:"ru",label:"RU",flag:"🇷🇺"},
+ {id:"uz",label:"UZ",flag:"🇺🇿"},
+ {id:"en",label:"EN",flag:"🇬🇧"}
+];
 
-  // 👉 Быстрая карта цен (важно!)
-  const priceMap = {};
-  for (const cat in menuData) {
-    menuData[cat].forEach(([n,p])=>priceMap[n]=p);
-  }
+const menuData={
+ "Шашлык":[["Шашлык куриный",45000],["Шашлык говяжий",60000]],
+ "Первые блюда":[["Шурпа",35000]],
+ "Национальные блюда":[["Плов",50000]],
+ "Салаты":[["Оливье",30000]],
+ "Напитки":[["Кола 1л",15000]],
+ "Хлеб":[["Лепёшка",5000]]
+};
 
-  // ЯЗЫКИ
-  const langDiv = document.getElementById("lang");
-  ["ru","uz","en"].forEach(l=>{
-    const b=document.createElement("button");
-    b.type="button";
-    b.className="lang-btn"+(l==="ru"?" active":"");
-    b.textContent=l.toUpperCase();
-    b.onclick=()=>{
-      lang=l;
-      document.querySelectorAll(".lang-btn").forEach(x=>x.classList.remove("active"));
-      b.classList.add("active");
-      renderCart();
-    };
-    langDiv.appendChild(b);
-  });
+const priceMap={};
+for(const c in menuData)menuData[c].forEach(([n,p])=>priceMap[n]=p);
 
-  function renderCategories(){
-    const div=document.getElementById("categories");
-    div.innerHTML="";
-    Object.keys(menuData).forEach(c=>{
-      const b=document.createElement("button");
-      b.type="button";
-      b.className="category-btn"+(c===currentCategory?" active":"");
-      b.textContent=c;
-      b.onclick=()=>{
-        currentCategory=c;
-        renderCategories();
-        renderMenu();
-      };
-      div.appendChild(b);
-    });
-  }
-
-  function renderMenu(){
-    const menu=document.getElementById("menu");
-    menu.innerHTML="";
-    menuData[currentCategory].forEach(([name,price])=>{
-      cart[name]=cart[name]||0;
-
-      const card=document.createElement("div");
-      card.className="card";
-      card.innerHTML=`<b>${name}</b><br>${price} сум`;
-
-      const minus=document.createElement("button");
-      minus.type="button";
-      minus.textContent="−";
-      minus.onclick=()=>{cart[name]=Math.max(0,cart[name]-1);renderMenu();renderCart();};
-
-      const plus=document.createElement("button");
-      plus.type="button";
-      plus.textContent="+";
-      plus.onclick=()=>{cart[name]++;renderMenu();renderCart();};
-
-      card.append(minus,document.createTextNode(" "+cart[name]+" "),plus);
-      menu.appendChild(card);
-    });
-  }
-
-  function renderCart(){
-    const div=document.getElementById("cart-items");
-    div.innerHTML="";
-    let total=0,has=false;
-
-    for(let i in cart){
-      if(cart[i]>0){
-        has=true;
-        total+=cart[i]*priceMap[i];
-        div.innerHTML+=`<div class="cart-item"><span>${i} × ${cart[i]}</span><span>${cart[i]*priceMap[i]} сум</span></div>`;
-      }
-    }
-
-    if(!has) div.textContent=texts[lang].empty;
-    document.getElementById("total").textContent=total;
-    document.getElementById("order").textContent=texts[lang].order;
-    document.getElementById("cart-title").textContent="🛒 "+texts[lang].cart;
-  }
-
-  document.getElementById("order").onclick=()=>{
-    tg.sendData(JSON.stringify({
-      order:cart,
-      total:document.getElementById("total").textContent,
-      phone:document.getElementById("phone").value,
-      lang:lang
-    }));
-  };
-
-  renderCategories();
-  renderMenu();
+/* 🌍 ЯЗЫК */
+const langDiv=document.getElementById("lang");
+langs.forEach(l=>{
+ const b=document.createElement("button");
+ b.className="lang-btn"+(l.id==="ru"?" active":"");
+ b.innerHTML=`${l.flag} ${l.label}`;
+ b.onclick=()=>{
+  lang=l.id;
+  document.querySelectorAll(".lang-btn").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
   renderCart();
+ };
+ langDiv.appendChild(b);
+});
+
+/* 🍽 КАТЕГОРИИ */
+function renderCategories(){
+ const div=document.getElementById("categories");
+ div.innerHTML="";
+ Object.keys(menuData).forEach(c=>{
+  const b=document.createElement("button");
+  b.className="category-btn"+(c===currentCategory?" active":"");
+  b.textContent=c;
+  b.onclick=()=>{
+    currentCategory=c;
+    renderCategories();
+    renderMenu();
+  };
+  div.appendChild(b);
+ });
+}
+
+/* 🧾 МЕНЮ */
+function renderMenu(){
+ const menu=document.getElementById("menu");
+ menu.innerHTML="";
+ menuData[currentCategory].forEach(([name,price])=>{
+  cart[name]=cart[name]||0;
+  const card=document.createElement("div");
+  card.className="card";
+  card.innerHTML=`
+   <div class="card-title">${name}</div>
+   <div class="card-price">${price} сум</div>
+   <div class="controls">
+    <button class="minus">−</button>
+    <span>${cart[name]}</span>
+    <button class="plus">+</button>
+   </div>`;
+  card.querySelector(".minus").onclick=()=>{cart[name]=Math.max(0,cart[name]-1);renderMenu();renderCart();}
+  card.querySelector(".plus").onclick=()=>{cart[name]++;renderMenu();renderCart();}
+  menu.appendChild(card);
+ });
+}
+
+/* 🛒 КОРЗИНА */
+function renderCart(){
+ const div=document.getElementById("cart-items");
+ div.innerHTML="";
+ let total=0,has=false;
+ for(const i in cart){
+  if(cart[i]>0){
+   has=true;
+   total+=cart[i]*priceMap[i];
+   div.innerHTML+=`<div class="cart-item"><span>${i} × ${cart[i]}</span><span>${cart[i]*priceMap[i]} сум</span></div>`;
+  }
+ }
+ if(!has)div.textContent=texts[lang].empty;
+ document.getElementById("total").textContent=total;
+ document.getElementById("order").textContent=texts[lang].order;
+ document.getElementById("cart-title").textContent="🛒 "+texts[lang].cart;
+}
+
+/* 📤 ЗАКАЗ */
+document.getElementById("order").onclick=()=>{
+ tg.sendData(JSON.stringify({
+  order:cart,
+  total:document.getElementById("total").textContent,
+  phone:document.getElementById("phone").value,
+  lang
+ }));
+};
+
+renderCategories();
+renderMenu();
+renderCart();
+
 });
 </script>
 
