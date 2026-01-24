@@ -30,9 +30,9 @@ input,select{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px
 <h2 id="title">🍽 Radj Shashlik</h2>
 
 <div style="text-align:center">
-  <button class="lang-btn active" onclick="setLang('ru',this)">🇷🇺 RU</button>
-  <button class="lang-btn" onclick="setLang('uz',this)">🇺🇿 UZ</button>
-  <button class="lang-btn" onclick="setLang('en',this)">🇬🇧 EN</button>
+  <button class="lang-btn active" id="btn-ru" onclick="setLang('ru',this)">🇷🇺 RU</button>
+  <button class="lang-btn" id="btn-uz" onclick="setLang('uz',this)">🇺🇿 UZ</button>
+  <button class="lang-btn" id="btn-en" onclick="setLang('en',this)">🇬🇧 EN</button>
 </div>
 
 <div style="text-align:center;margin-top:10px" id="categories"></div>
@@ -61,19 +61,20 @@ let lang='ru';
 let currentCatId='salad';
 const cart={};
 
+// Объект переводов (тексты интерфейса и названия блюд по ID)
 const translations={
  ru:{
   cart:"🛒 Корзина", empty:"Корзина пуста", total:"Итого", order:"✅ Оформить заказ", 
   valute:"сум", del:"🚚 Доставка", pick:"🏃 Самовывоз", addr:"📍 Адрес доставки",
-  cats:{salad:"Салаты", national:"Национальные блюда", shashlik:"Шашлык/Мясные блюда", soup:"Супы", grill:"Блюда на мангале", drink:"Напитки", bread:"Хлеб"},
+  cats:{salad:"Салаты", national:"Национальные блюда", shashlik:"Шашлык/Мясные", soup:"Супы", grill:"Блюда на мангале", hot_dishes:"Горячие блюда", drink:"Напитки", bread:"Прочее"},
   items:{
     achichuk:"Ачичук", shakarop:"Шакароп", chirokchi:"Чирокчи", greek:"Греческий", majnuntol:"Мажнунтол", m_caprice:"Мужской каприз", d_caprice:"Дамский каприз", 
     olivye:"Оливье", french:"Французский", smak:"Смак", caesar:"Цезарь", b_eggplant:"Хрустящий баклажан", fresh:"Свежий",
     molotiy:"Молотый", molotiy_mix:"Молотый микс", lamb_chunk:"Кусковой баранина", rulet:"Рулет", napoleon:"Наполеон", koreyka:"Корейка", bykin:"Быкин", ribs:"Ребрышки (семечки)",
     liver:"Печень", kurdyuk:"Курдюк", beef_tender:"Говяжья вырезка", chk_fillet:"Куриное филе", chk_wings:"Куриные крылышки", 
-    bomb:"Бомбочка", chk_chop:"Горядина отбивная", kotlety:"Котлеты 1 шт", cheburek:"Чебурек на мангале", sausage_spicy:"Колбаски острые 1 шт", veg_mix:"Овощной микс", sausage_milk:"Колбаски молочные 1 шт", mushrooms:"Грибы шампиньоны",
-    zb_l1kg:"Жиз Биз Баранина 1 кг", zb_l05kg:"Жиз Биз Баранина 0.5кг", zb_bt1kg:"Жиз Биз из вырезки 1 кг", zb_bt05kg:"Жиз Биз из вырезки 0.5кг", chk_steak:"Стейк Куринный", tbone_steak:"Стейк Тибон 100гр", wagyu_steak:"Стейк Вагури", 
+    chk_chop:"Горядина отбивная", kotlety:"Котлеты 1 шт", chk_steak:"Стейк Куринный", tbone_steak:"Стейк Тибон 100гр", wagyu_steak:"Стейк Вагури", 
     lamb_mush05kg:"Баранина с грибами 0.5кг", lamb_mush1kg:"Баранина с грибами 1 кг", bt_veg05kg:"Говяжья вырезка с овощами 0.5кг", bt_veg1kg:"Говяжья вырезка с овощами 1 кг",
+    cheburek:"Чебурек на мангале", sausage_spicy:"Колбаски острые 1 шт", veg_mix:"Овощной микс", sausage_milk:"Колбаски молочные 1 шт", mushrooms:"Грибы шампиньоны", bomb:"Бомбочка",
     shurpa:"Шурпа", shchi_green:"Щи зеленые", borshch:"Борщ со сметаной", guja:"Гужа", mastava:"Мастава",
     chk_gr_tea:"Чай Черный/зеленый", tea_lemon:"Чай с лимоном", fanta1l:"Fanta 1L", fanta15l:"Fanta 1.5L", cola1l:"Coca Cola 1L", cola15l:"Coca Cola 1.5L", juice:"Сок Сочная Долина в асс-те 1L", 
     pepsi1l:"Pepsi 1L", pepsi15l:"Pepsi 1.5L", water_min:"Минеральная вода Chortoq 0.5L", water_still1l:"Вода без газа Chortoq 1L", water_still15l:"Вода без газа Chortoq 1.5L", 
@@ -81,18 +82,17 @@ const translations={
     bread_l:"Лепешка Чап чак 1 шт", tomatoes:"Помидоры 3шт", potatoes:"Картофель 3шт"
   }
  },
- uz:{
+ uz:{ /* Узбекские переводы */
   cart:"🛒 Savat", empty:"Savat bo‘sh", total:"Jami", order:"✅ Buyurtma berish", 
   valute:"so'm", del:"🚚 Yetkazib berish", pick:"🏃 Olib ketish", addr:"📍 Manzil",
-  cats:{salad:"Salatlar", national:"Milliy taomlar", shashlik:"Kabob/Go'shtli taomlar", soup:"Sho'rvalar", grill:"Mangalda pishirilgan taomlar", drink:"Ichimliklar", bread:"Non"},
+  cats:{salad:"Salatlar", national:"Milliy taomlar", shashlik:"Kabob/Go'shtli taomlar", soup:"Sho'rvalar", grill:"Mangalda pishirilgan taomlar", hot_dishes:"Issiq ovqatlar", drink:"Ichimliklar", bread:"Boshqa"},
   items:{
     achichuk:"Achchiq-chuchuk", shakarop:"Shakarob", chirokchi:"Chiroqchi", greek:"Gretsiya salati", majnuntol:"Majnuntol", m_caprice:"Erkaklar injiqligi", d_caprice:"Ayollar injiqligi", 
     olivye:"Olyvye", french:"Fransuzcha", smak:"Smak", caesar:"Sezar", b_eggplant:"Qarsildoq baqlajon", fresh:"Yangi",
     molotiy:"Molotiy", molotiy_mix:"Molotiy miks", lamb_chunk:"Qo'zichoq go'shti", rulet:"Rulet", napoleon:"Napoleon", koreyka:"Koreyka", bykin:"Bykin", ribs:"Qovurg'alar",
     liver:"Jigar", kurdyuk:"Quyruq yog'i", beef_tender:"Mol go'shti", chk_fillet:"Tovuq filesi", chk_wings:"Tovuq qanotlari", 
-    bomb:"Bombochka", chk_chop:"Tovuq otbivnoy", kotlety:"Kotlet 1 dona", cheburek:"Mangalda cheburek", sausage_spicy:"Achchiq kolbasa 1 dona", veg_mix:"Sabzavotli miks", sausage_milk:"Sutli kolbasa 1 dona", mushrooms:"Qo'ziqorinlar",
-    zb_l1kg:"Jiz Biz Qo'zi 1 kg", zb_l05kg:"Jiz Biz Qo'zi 0.5kg", zb_bt1kg:"Jiz Biz Mol go'shti 1 kg", zb_bt05kg:"Jiz Biz Mol go'shti 0.5kg", chk_steak:"Tovuq steyk", tbone_steak:"T-bone steyk 100gr", wagyu_steak:"Wagyu steyk", 
-    lamb_mush05kg:"Qo'ziqorinli qo'zi go'shti 0.5kg", lamb_mush1kg:"Qo'ziqorinli qo'zi go'shti 1 kg", bt_veg05kg:"Sabzavotli mol go'shti 0.5kg", bt_veg1kg:"Sabzavotli mol go'shti 1 kg",
+    chk_chop:"Tovuq otbivnoy", kotlety:"Kotlet 1 dona", chk_steak:"Tovuq steyk", tbone_steak:"T-bone steyk 100gr", wagyu_steak:"Wagyu steyk", 
+    cheburek:"Mangalda cheburek", sausage_spicy:"Achchiq kolbasa 1 dona", veg_mix:"Sabzavotli miks", sausage_milk:"Sutli kolbasa 1 dona", mushrooms:"Qo'ziqorinlar", bomb:"Bombochka",
     shurpa:"Sho'rva", shchi_green:"Yashil shchi", borshch:"Smetanali borshch", guja:"Go'ja", mastava:"Mastava",
     chk_gr_tea:"Choy Qora/ko'k", tea_lemon:"Limonli choy", fanta1l:"Fanta 1L", fanta15l:"Fanta 1.5L", cola1l:"Coca Cola 1L", cola15l:"Coca Cola 1.5L", juice:"Sharbat assorti 1L", 
     pepsi1l:"Pepsi 1L", pepsi15l:"Pepsi 1.5L", water_min:"Mineral suv Chortoq 0.5L", water_still1l:"Gazsiz suv Chortoq 1L", water_still15l:"Gazsiz suv Chortoq 1.5L", 
@@ -100,32 +100,33 @@ const translations={
     bread_l:"Chap chak non 1 dona", tomatoes:"Pomidor 3 dona", potatoes:"Kartoshka 3 dona"
   }
  },
- en:{
+ en:{ /* Английские переводы */
   cart:"🛒 Cart", empty:"Cart is empty", total:"Total", order:"✅ Place order", 
   valute:"sum", del:"🚚 Delivery", pick:"🏃 Pickup", addr:"📍 Delivery address",
-  cats:{salad:"Salads", national:"National dishes", shashlik:"Shashlik/Meat dishes", soup:"Soups", grill:"Grilled dishes", drink:"Drinks", bread:"Bread"},
+  cats:{salad:"Salads", national:"National dishes", shashlik:"Shashlik/Meat", soup:"Soups", grill:"Grilled dishes", hot_dishes:"Hot dishes", drink:"Drinks", bread:"Misc"},
   items:{
     achichuk:"Achichuk salad", shakarop:"Shakarop salad", chirokchi:"Chirokchi", greek:"Greek salad", majnuntol:"Majnuntol", m_caprice:"Men's caprice", d_caprice:"Ladies' caprice", 
     olivye:"Olivier salad", french:"French salad", smak:"Smak salad", caesar:"Caesar salad", b_eggplant:"Crispy eggplant", fresh:"Fresh",
-    molotiy:"Minced meat shashlik", molotiy_mix:"Minced meat mix shashlik", lamb_chunk:"Lamb chunk shashlik", rulet:"Rulet", napoleon:"Napoleon", koreyka:"Loin shashlik", bykin:"Bykin shashlik", ribs:"Ribs (seeds)",
+    molotiy:"Minced meat shashlik", molotiy_mix:"Minced meat mix", lamb_chunk:"Lamb chunk shashlik", rulet:"Rulet", napoleon:"Napoleon", koreyka:"Loin shashlik", bykin:"Bykin shashlik", ribs:"Ribs (seeds)",
     liver:"Liver shashlik", kurdyuk:"Fatty tail fat", beef_tender:"Beef tenderloin shashlik", chk_fillet:"Chicken fillet shashlik", chk_wings:"Chicken wings shashlik", 
-    bomb:"Bombochka (dish)", chk_chop:"Chicken chop", kotlety:"Cutlet 1 pc", cheburek:"Cheburek on grill", sausage_spicy:"Spicy sausage 1 pc", veg_mix:"Vegetable mix", sausage_milk:"Milk sausage 1 pc", mushrooms:"Mushrooms",
-    zb_l1kg:"Jiz Biz Lamb 1 kg", zb_l05kg:"Jiz Biz Lamb 0.5kg", zb_bt1kg:"Jiz Biz Beef 1 kg", zb_bt05kg:"Jiz Biz Beef 0.5kg", chk_steak:"Chicken steak", tbone_steak:"T-bone steak 100gr", wagyu_steak:"Wagyu steak", 
-    lamb_mush05kg:"Lamb with mushrooms 0.5kg", lamb_mush1kg:"Lamb with mushrooms 1 kg", bt_veg05kg:"Beef with vegetables 0.5kg", bt_veg1kg:"Beef with vegetables 1 kg",
+    chk_chop:"Chicken chop", kotlety:"Cutlet 1 pc", chk_steak:"Chicken steak", tbone_steak:"T-bone steak 100gr", wagyu_steak:"Wagyu steak", 
+    cheburek:"Cheburek on grill", sausage_spicy:"Spicy sausage 1 pc", veg_mix:"Vegetable mix", sausage_milk:"Milk sausage 1 pc", mushrooms:"Mushrooms", bomb:"Bombochka",
     shurpa:"Shurpa soup", shchi_green:"Green shchi", borshch:"Borshch with sour cream", guja:"Guja soup", mastava:"Mastava soup",
     chk_gr_tea:"Tea Black/green", tea_lemon:"Tea with lemon", fanta1l:"Fanta 1L", fanta15l:"Fanta 1.5L", cola1l:"Coca Cola 1L", cola15l:"Coca Cola 1.5L", juice:"Juice assortment 1L", 
     pepsi1l:"Pepsi 1L", pepsi15l:"Pepsi 1.5L", water_min:"Mineral water Chortoq 0.5L", water_still1l:"Still water Chortoq 1L", water_still15l:"Still water Chortoq 1.5L", 
     tarhun:"Tarhun lemonade 0.5L", duches:"Duches lemonade 0.5L", energy:"Energy drink Saber 0.5L",
     bread_l:"Chap chak flatbread 1 pc", tomatoes:"Tomatoes 3pcs", potatoes:"Potatoes 3pcs"
   }
-};
+ };
 
+// Данные меню (только ID и цены)
 const menuData={
  salad:[{id:"achichuk",p:30000},{id:"shakarop",p:30000},{id:"chirokchi",p:30000},{id:"fresh",p:30000},{id:"greek",p:40000},{id:"majnuntol",p:30000},{id:"m_caprice",p:35000},{id:"d_caprice",p:35000},{id:"olivye",p:30000},{id:"french",p:35000},{id:"smak",p:35000},{id:"caesar",p:35000},{id:"b_eggplant",p:45000},{id:"veg_mix",p:15000}],
  national:[{id:"zb_l1kg",p:260000},{id:"zb_l05kg",p:130000},{id:"zb_bt1kg",p:300000},{id:"zb_bt05kg",p:150000}],
- shashlik:[{id:"molotiy",p:28000},{id:"molotiy_mix",p:30000},{id:"lamb_chunk",p:30000},{id:"rulet",p:30000},{id:"napoleon",p:30000},{id:"koreyka",p:40000},{id:"bykin",p:40000},{id:"ribs",p:30000},{id:"liver",p:22000},{id:"kurdyuk",p:30000},{id:"beef_tender",p:30000},{id:"chk_fillet",p:22000},{id:"chk_wings",p:22000},{id:"bomb",p:30000},{id:"chk_chop",p:35000},{id:"kotlety",p:30000},{id:"chk_steak",p:100000},{id:"tbone_steak",p:20000},{id:"wagyu_steak",p:200000}],
+ shashlik:[{id:"molotiy",p:28000},{id:"molotiy_mix",p:30000},{id:"lamb_chunk",p:30000},{id:"rulet",p:30000},{id:"napoleon",p:30000},{id:"koreyka",p:40000},{id:"bykin",p:40000},{id:"ribs",p:30000},{id:"liver",p:22000},{id:"kurdyuk",p:30000},{id:"beef_tender",p:30000},{id:"chk_fillet",p:22000},{id:"chk_wings",p:22000},{id:"chk_steak",p:100000},{id:"tbone_steak",p:20000},{id:"wagyu_steak",p:200000}],
  soup:[{id:"shurpa",p:35000},{id:"shchi_green",p:25000},{id:"borshch",p:25000},{id:"guja",p:25000},{id:"mastava",p:25000}],
- grill:[{id:"cheburek",p:30000},{id:"sausage_spicy",p:17000},{id:"sausage_milk",p:17000},{id:"mushrooms",p:15000}],
+ hot_dishes:[{id:"chk_chop",p:35000},{id:"kotlety",p:30000},{id:"lamb_mush05kg",p:100000},{id:"lamb_mush1kg",p:200000},{id:"bt_veg05kg",p:180000},{id:"bt_veg1kg",p:360000}],
+ grill:[{id:"cheburek",p:30000},{id:"sausage_spicy",p:17000},{id:"sausage_milk",p:17000},{id:"mushrooms",p:15000},{id:"bomb",p:30000}],
  drink:[{id:"chk_gr_tea",p:5000},{id:"tea_lemon",p:15000},{id:"fanta1l",p:14000},{id:"fanta15l",p:18000},{id:"cola1l",p:14000},{id:"cola15l",p:18000},{id:"juice",p:20000},{id:"pepsi1l",p:14000},{id:"pepsi15l",p:18000},{id:"water_min",p:15000},{id:"water_still1l",p:6000},{id:"water_still15l",p:8000},{id:"tarhun",p:12000},{id:"duches",p:12000},{id:"energy",p:15000}],
  bread:[{id:"bread_l",p:10000},{id:"tomatoes",p:12000},{id:"potatoes",p:10000}]
 };
@@ -184,7 +185,7 @@ function renderMenu(){
 function change(id,d){
  cart[id]+=d;
  if(cart[id]<0)cart[id]=0;
- renderMenu();
+ renderMenu(); // Перерисовка, чтобы обновить счетчики в меню
  renderCart();
 }
 
@@ -229,11 +230,14 @@ function sendOrder(){
  Telegram.WebApp.close();
 }
 
-setLang('ru', document.querySelector('.lang-btn'));
+// Инициализация при загрузке:
+setLang('ru', document.getElementById('btn-ru'));
+toggleAddress();
 </script>
 
 </body>
 </html>
+
 
 
 
