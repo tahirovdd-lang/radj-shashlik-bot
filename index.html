@@ -9,7 +9,7 @@
 <style>
 body{font-family:Arial;background:#f5f5f5;padding:10px;margin:0}
 h2,h3{text-align:center}
-.lang-btn,.category-btn{
+.lang-btn,.category-btn,button{
   padding:8px 12px;margin:3px;border:none;border-radius:6px;
   background:#ddd;cursor:pointer
 }
@@ -19,11 +19,10 @@ h2,h3{text-align:center}
 .card{background:#fff;border-radius:10px;padding:15px;margin-bottom:10px}
 .controls{display:flex;gap:10px;align-items:center}
 .plus{background:#4CAF50;color:white}
-.minus{background:#ddd}
 .cart{background:#fff;border-radius:10px;padding:15px;margin-top:10px}
 .cart-item{display:flex;justify-content:space-between}
-input,select,button{width:100%;padding:10px;margin-top:8px}
-.order-btn{background:#0088cc;color:white;font-size:18px}
+input,select{width:100%;padding:10px;margin-top:8px}
+.order-btn{background:#0088cc;color:white;font-size:18px;width:100%}
 </style>
 </head>
 
@@ -49,7 +48,7 @@ input,select,button{width:100%;padding:10px;margin-top:8px}
 <input id="address" placeholder="Адрес доставки">
 <input id="phone" placeholder="Телефон">
 
-<button id="order" class="order-btn">Оформить заказ</button>
+<button id="order" type="button" class="order-btn">Оформить заказ</button>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
@@ -77,17 +76,25 @@ document.addEventListener("DOMContentLoaded", () => {
     "Хлеб":[["Лепёшка",5000]]
   };
 
+  // 👉 Быстрая карта цен (важно!)
+  const priceMap = {};
+  for (const cat in menuData) {
+    menuData[cat].forEach(([n,p])=>priceMap[n]=p);
+  }
+
+  // ЯЗЫКИ
   const langDiv = document.getElementById("lang");
   ["ru","uz","en"].forEach(l=>{
     const b=document.createElement("button");
+    b.type="button";
     b.className="lang-btn"+(l==="ru"?" active":"");
     b.textContent=l.toUpperCase();
-    b.addEventListener("click",()=>{
+    b.onclick=()=>{
       lang=l;
       document.querySelectorAll(".lang-btn").forEach(x=>x.classList.remove("active"));
       b.classList.add("active");
       renderCart();
-    });
+    };
     langDiv.appendChild(b);
   });
 
@@ -96,13 +103,14 @@ document.addEventListener("DOMContentLoaded", () => {
     div.innerHTML="";
     Object.keys(menuData).forEach(c=>{
       const b=document.createElement("button");
+      b.type="button";
       b.className="category-btn"+(c===currentCategory?" active":"");
       b.textContent=c;
-      b.addEventListener("click",()=>{
+      b.onclick=()=>{
         currentCategory=c;
         renderCategories();
         renderMenu();
-      });
+      };
       div.appendChild(b);
     });
   }
@@ -111,17 +119,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const menu=document.getElementById("menu");
     menu.innerHTML="";
     menuData[currentCategory].forEach(([name,price])=>{
-      if(!cart[name]) cart[name]=0;
+      cart[name]=cart[name]||0;
 
       const card=document.createElement("div");
       card.className="card";
       card.innerHTML=`<b>${name}</b><br>${price} сум`;
 
       const minus=document.createElement("button");
+      minus.type="button";
       minus.textContent="−";
       minus.onclick=()=>{cart[name]=Math.max(0,cart[name]-1);renderMenu();renderCart();};
 
       const plus=document.createElement("button");
+      plus.type="button";
       plus.textContent="+";
       plus.onclick=()=>{cart[name]++;renderMenu();renderCart();};
 
@@ -134,26 +144,28 @@ document.addEventListener("DOMContentLoaded", () => {
     const div=document.getElementById("cart-items");
     div.innerHTML="";
     let total=0,has=false;
+
     for(let i in cart){
       if(cart[i]>0){
         has=true;
-        const price=menuData[Object.keys(menuData).find(c=>menuData[c].some(x=>x[0]==i))].find(x=>x[0]==i)[1];
-        total+=cart[i]*price;
-        div.innerHTML+=`<div>${i} × ${cart[i]}</div>`;
+        total+=cart[i]*priceMap[i];
+        div.innerHTML+=`<div class="cart-item"><span>${i} × ${cart[i]}</span><span>${cart[i]*priceMap[i]} сум</span></div>`;
       }
     }
+
     if(!has) div.textContent=texts[lang].empty;
     document.getElementById("total").textContent=total;
     document.getElementById("order").textContent=texts[lang].order;
+    document.getElementById("cart-title").textContent="🛒 "+texts[lang].cart;
   }
 
   document.getElementById("order").onclick=()=>{
     tg.sendData(JSON.stringify({
       order:cart,
+      total:document.getElementById("total").textContent,
       phone:document.getElementById("phone").value,
-      total:document.getElementById("total").textContent
+      lang:lang
     }));
-    tg.close();
   };
 
   renderCategories();
