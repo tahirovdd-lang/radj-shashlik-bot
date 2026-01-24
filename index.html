@@ -7,86 +7,27 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-body{
-    margin:0;
-    font-family: Arial, sans-serif;
-    background:#f2f4f7;
-}
-.header{
-    padding:15px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-}
-.logo-wrap{
-    display:flex;
-    align-items:center;
-    gap:10px;
-}
+body{margin:0;font-family:Arial,sans-serif;background:#f2f4f7;}
+.header{padding:15px;display:flex;align-items:center;justify-content:space-between;}
+.logo-wrap{display:flex;align-items:center;gap:10px;}
 .header img{max-width:120px;}
 .header-title{font-size:20px;font-weight:bold;}
-
-.search-btn{
-    width:36px;height:36px;border-radius:50%;
-    border:none;background:#4a90e2;color:#fff;font-size:18px;
-}
-
-.search-input{
-    display:none;margin:0 10px 10px;
-    padding:12px;width:calc(100% - 20px);
-    border-radius:14px;border:none;
-}
-
-.langs,.types,.categories{
-    display:flex;gap:10px;padding:10px;overflow-x:auto;
-}
-.btn{
-    padding:10px 14px;border-radius:14px;
-    background:#fff;border:none;font-size:14px;
-}
+.search-btn{width:36px;height:36px;border-radius:50%;border:none;background:#4a90e2;color:#fff;font-size:18px;}
+.search-input{display:none;margin:0 10px 10px;padding:12px;width:calc(100% - 20px);border-radius:14px;border:none;}
+.langs,.types,.categories{display:flex;gap:10px;padding:10px;overflow-x:auto;}
+.btn{padding:10px 14px;border-radius:14px;background:#fff;border:none;font-size:14px;}
 .btn.active{background:#4a90e2;color:#fff;}
-
-.input,textarea{
-    margin:10px;padding:12px;
-    width:calc(100% - 20px);
-    border-radius:14px;border:none;font-size:14px;
-}
+.input,textarea{margin:10px;padding:12px;width:calc(100% - 20px);border-radius:14px;border:none;font-size:14px;}
 textarea{resize:none;}
-
-.products{
-    display:grid;grid-template-columns:repeat(2,1fr);
-    gap:12px;padding:10px;
-}
-.card{
-    background:#fff;border-radius:16px;
-    padding:10px;text-align:center;
-}
-.img{
-    height:100px;background:#e1e5ea;
-    border-radius:12px;display:flex;
-    align-items:center;justify-content:center;
-}
+.products{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:10px;}
+.card{background:#fff;border-radius:16px;padding:10px;text-align:center;}
+.img{height:100px;background:#e1e5ea;border-radius:12px;display:flex;align-items:center;justify-content:center;}
 .price{margin-top:6px;font-weight:bold;color:#2e7d32;}
 .name{font-size:14px;margin-top:4px;}
-
-.counter{
-    display:flex;justify-content:center;
-    gap:10px;margin-top:6px;
-}
-.counter button{
-    width:30px;height:30px;
-    border-radius:50%;border:none;font-size:18px;
-}
-
-.cart{
-    background:#fff;margin:10px;
-    padding:12px;border-radius:16px;
-}
-.order-btn{
-    width:100%;padding:14px;margin-top:10px;
-    border:none;border-radius:14px;
-    background:#4a90e2;color:#fff;font-size:16px;
-}
+.counter{display:flex;justify-content:center;gap:10px;margin-top:6px;}
+.counter button{width:30px;height:30px;border-radius:50%;border:none;font-size:18px;}
+.cart{background:#fff;margin:10px;padding:12px;border-radius:16px;}
+.order-btn{width:100%;padding:14px;margin-top:10px;border:none;border-radius:14px;background:#4a90e2;color:#fff;font-size:16px;}
 </style>
 </head>
 
@@ -128,27 +69,12 @@ textarea{resize:none;}
 <script>
 Telegram.WebApp.ready();
 
-let lang='ru',category='salads',type='delivery',cart={},search='';
+let lang='ru',category='salads',type='delivery',cart={},searchValue='';
 
 const TEXT={
-ru:{
-delivery:'🚚 Доставка',pickup:'🏃 Самовывоз',
-address:'📍 Адрес доставки',phone:'📞 Телефон',
-cart:'🛒 Корзина',order:'Оформить заказ',
-comment:'💬 Комментарий к заказу',search:'🔎 Поиск блюд'
-},
-uz:{
-delivery:'🚚 Yetkazib berish',pickup:'🏃 Olib ketish',
-address:'📍 Manzil',phone:'📞 Telefon',
-cart:'🛒 Savat',order:'Buyurtma berish',
-comment:'💬 Izoh',search:'🔎 Qidirish'
-},
-en:{
-delivery:'🚚 Delivery',pickup:'🏃 Pickup',
-address:'📍 Address',phone:'📞 Phone',
-cart:'🛒 Cart',order:'Place order',
-comment:'💬 Comment',search:'🔎 Search'
-}
+ru:{delivery:'🚚 Доставка',pickup:'🏃 Самовывоз',address:'📍 Адрес доставки',phone:'📞 Телефон',cart:'🛒 Корзина',order:'Оформить заказ',comment:'💬 Комментарий к заказу',search:'🔎 Поиск блюд'},
+uz:{delivery:'🚚 Yetkazib berish',pickup:'🏃 Olib ketish',address:'📍 Manzil',phone:'📞 Telefon',cart:'🛒 Savat',order:'Buyurtma berish',comment:'💬 Izoh',search:'🔎 Qidirish'},
+en:{delivery:'🚚 Delivery',pickup:'🏃 Pickup',address:'📍 Address',phone:'📞 Phone',cart:'🛒 Cart',order:'Place order',comment:'💬 Comment',search:'🔎 Search'}
 };
 
 const CATS={
@@ -183,7 +109,7 @@ function toggleSearch(){
     search.style.display=search.style.display==='block'?'none':'block';
 }
 
-search.oninput=e=>{search=e.target.value.toLowerCase();renderProducts();};
+search.oninput=e=>{searchValue=e.target.value.toLowerCase();renderProducts();};
 
 function renderCats(){
     cats.innerHTML='';
@@ -194,7 +120,8 @@ function renderCats(){
 
 function renderProducts(){
     products.innerHTML='';
-    MENU[category].filter(i=>i[0].toLowerCase().includes(search))
+    MENU[category]
+    .filter(i=>i[0].toLowerCase().includes(searchValue))
     .forEach(([n,p])=>{
         cart[n]=cart[n]||0;
         products.innerHTML+=`
@@ -216,16 +143,34 @@ function chg(n,v){cart[n]=Math.max(0,(cart[n]||0)+v);renderProducts();}
 function upd(){let s=0;for(let k in cart)s+=cart[k]*price(k);total.innerText=s;}
 function price(n){for(let c in MENU)for(let i of MENU[c])if(i[0]==n)return i[1];}
 
-function setLang(l){lang=l;document.querySelectorAll('.langs .btn').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');applyLang();}
-function setType(t){type=t;document.querySelectorAll('.types .btn').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');address.style.display=t==='pickup'?'none':'block';}
+function setLang(l){
+    lang=l;
+    document.querySelectorAll('.langs .btn').forEach(b=>b.classList.remove('active'));
+    event.target.classList.add('active');
+    applyLang();
+}
+
+function setType(t){
+    type=t;
+    document.querySelectorAll('.types .btn').forEach(b=>b.classList.remove('active'));
+    event.target.classList.add('active');
+    address.style.display=t==='pickup'?'none':'block';
+}
 
 function sendOrder(){
-    const order={};for(let k in cart)if(cart[k]>0)order[k]=cart[k];
+    const order={};
+    for(let k in cart) if(cart[k]>0) order[k]=cart[k];
+
     Telegram.WebApp.sendData(JSON.stringify({
-        order,lang,total:total.innerText,
-        phone:phone.value,comment:comment.value,
-        delivery:type,address:type==='delivery'?address.value:'—'
+        order: order,
+        phone: phone.value || '—',
+        comment: comment.value || '—',
+        delivery: type,
+        address: type==='delivery'?address.value:'Самовывоз',
+        total: total.innerText,
+        lang: lang
     }));
+
     Telegram.WebApp.close();
 }
 
