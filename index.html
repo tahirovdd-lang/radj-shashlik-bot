@@ -4,34 +4,24 @@
 <meta charset="UTF-8">
 <title>Radj Shashlik</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://telegram.org"></script>
 
 <style>
 body{font-family:Arial;background:#f5f5f5;padding:10px;margin:0}
 h2,h3{text-align:center}
-.lang-btn,.category-btn{
-  padding:8px 12px;
-  margin:3px;
-  border:none;
-  border-radius:6px;
-  background:#ddd;
-  cursor:pointer
-}
-.lang-btn.active,.category-btn.active{
-  background:#0088cc;
-  color:#fff
-}
-.card{background:#fff;border-radius:10px;padding:15px;margin-bottom:10px}
-.title{font-weight:bold}
-.price{color:green;margin:5px 0}
+.lang-btn,.category-btn{padding:8px 12px;margin:3px;border:none;border-radius:6px;background:#ddd;cursor:pointer}
+.lang-btn.active,.category-btn.active{background:#0088cc;color:#fff}
+.card{background:#fff;border-radius:10px;padding:15px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.price{color:green;margin:5px 0;font-weight:bold}
 .controls{display:flex;gap:10px;align-items:center}
+button{padding:5px 12px;border-radius:6px;border:none;cursor:pointer}
 .plus{background:#4CAF50;color:white}
 .minus{background:#ddd}
 .cart{background:#fff;border-radius:10px;padding:15px;margin-top:10px}
-.cart-item{display:flex;justify-content:space-between}
+.cart-item{display:flex;justify-content:space-between;margin-bottom:5px}
 .total{text-align:center;font-size:18px;font-weight:bold;margin-top:10px}
-input,select{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px solid #ccc}
-.order-btn{width:100%;background:#0088cc;color:white;font-size:18px;padding:12px;margin-top:10px}
+input,select{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box}
+.order-btn{width:100%;background:#0088cc;color:white;font-size:18px;padding:12px;margin-top:10px;border:none;border-radius:6px;cursor:pointer}
 </style>
 </head>
 
@@ -39,30 +29,24 @@ input,select{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px
 
 <h2 id="title">🍽 Radj Shashlik</h2>
 
-<!-- 🌐 ЯЗЫК -->
 <div style="text-align:center">
   <button class="lang-btn active" onclick="setLang('ru',this)">🇷🇺 RU</button>
   <button class="lang-btn" onclick="setLang('uz',this)">🇺🇿 UZ</button>
   <button class="lang-btn" onclick="setLang('en',this)">🇬🇧 EN</button>
 </div>
 
-<!-- КАТЕГОРИИ -->
 <div style="text-align:center;margin-top:10px" id="categories"></div>
-
-<!-- МЕНЮ -->
 <div id="menu"></div>
 
-<!-- КОРЗИНА -->
 <div class="cart">
 <h3 id="cart-title">🛒 Корзина</h3>
-<div id="cart-items">Корзина пуста</div>
-<div class="total">💰 <span id="total-label">Итого</span>: <span id="total">0</span> сум</div>
+<div id="cart-items"></div>
+<div class="total">💰 <span id="total-label">Итого</span>: <span id="total">0</span> <span id="valute">сум</span></div>
 </div>
 
-<!-- ДОСТАВКА -->
 <select id="delivery" onchange="toggleAddress()">
-  <option value="delivery">🚚 Доставка</option>
-  <option value="pickup">🏃 Самовывоз</option>
+  <option value="delivery" id="opt-del">🚚 Доставка</option>
+  <option value="pickup" id="opt-pick">🏃 Самовывоз</option>
 </select>
 
 <input type="text" id="address" placeholder="📍 Адрес доставки">
@@ -74,79 +58,132 @@ input,select{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px
 Telegram.WebApp.ready();
 
 let lang='ru';
-let currentCategory='Шашлык';
+let currentCatId='salad';
 const cart={};
 
-const texts={
+const translations={
  ru:{
-  cart:"🛒 Корзина", empty:"Корзина пуста",
-  total:"Итого", order:"✅ Оформить заказ"
+  cart:"🛒 Корзина", empty:"Корзина пуста", total:"Итого", order:"✅ Оформить заказ", 
+  valute:"сум", del:"🚚 Доставка", pick:"🏃 Самовывоз", addr:"📍 Адрес доставки",
+  cats:{salad:"Салаты", national:"Национальные блюда", shashlik:"Шашлык/Мясные блюда", soup:"Супы", grill:"Блюда на мангале", drink:"Напитки", bread:"Хлеб"},
+  items:{
+    achichuk:"Ачичук", shakarop:"Шакароп", chirokchi:"Чирокчи", greek:"Греческий", majnuntol:"Мажнунтол", m_caprice:"Мужской каприз", d_caprice:"Дамский каприз", 
+    olivye:"Оливье", french:"Французский", smak:"Смак", caesar:"Цезарь", b_eggplant:"Хрустящий баклажан", fresh:"Свежий",
+    molotiy:"Молотый", molotiy_mix:"Молотый микс", lamb_chunk:"Кусковой баранина", rulet:"Рулет", napoleon:"Наполеон", koreyka:"Корейка", bykin:"Быкин", ribs:"Ребрышки (семечки)",
+    liver:"Печень", kurdyuk:"Курдюк", beef_tender:"Говяжья вырезка", chk_fillet:"Куриное филе", chk_wings:"Куриные крылышки", 
+    bomb:"Бомбочка", chk_chop:"Горядина отбивная", kotlety:"Котлеты 1 шт", cheburek:"Чебурек на мангале", sausage_spicy:"Колбаски острые 1 шт", veg_mix:"Овощной микс", sausage_milk:"Колбаски молочные 1 шт", mushrooms:"Грибы шампиньоны",
+    zb_l1kg:"Жиз Биз Баранина 1 кг", zb_l05kg:"Жиз Биз Баранина 0.5кг", zb_bt1kg:"Жиз Биз из вырезки 1 кг", zb_bt05kg:"Жиз Биз из вырезки 0.5кг", chk_steak:"Стейк Куринный", tbone_steak:"Стейк Тибон 100гр", wagyu_steak:"Стейк Вагури", 
+    lamb_mush05kg:"Баранина с грибами 0.5кг", lamb_mush1kg:"Баранина с грибами 1 кг", bt_veg05kg:"Говяжья вырезка с овощами 0.5кг", bt_veg1kg:"Говяжья вырезка с овощами 1 кг",
+    shurpa:"Шурпа", shchi_green:"Щи зеленые", borshch:"Борщ со сметаной", guja:"Гужа", mastava:"Мастава",
+    chk_gr_tea:"Чай Черный/зеленый", tea_lemon:"Чай с лимоном", fanta1l:"Fanta 1L", fanta15l:"Fanta 1.5L", cola1l:"Coca Cola 1L", cola15l:"Coca Cola 1.5L", juice:"Сок Сочная Долина в асс-те 1L", 
+    pepsi1l:"Pepsi 1L", pepsi15l:"Pepsi 1.5L", water_min:"Минеральная вода Chortoq 0.5L", water_still1l:"Вода без газа Chortoq 1L", water_still15l:"Вода без газа Chortoq 1.5L", 
+    tarhun:"Лимонад Тархун 0.5L", duches:"Лимонад Дюшес 0.5L", energy:"Энергетический напиток Saber 0.5L",
+    bread_l:"Лепешка Чап чак 1 шт", tomatoes:"Помидоры 3шт", potatoes:"Картофель 3шт"
+  }
  },
  uz:{
-  cart:"🛒 Savat", empty:"Savat bo‘sh",
-  total:"Jami", order:"✅ Buyurtma berish"
+  cart:"🛒 Savat", empty:"Savat bo‘sh", total:"Jami", order:"✅ Buyurtma berish", 
+  valute:"so'm", del:"🚚 Yetkazib berish", pick:"🏃 Olib ketish", addr:"📍 Manzil",
+  cats:{salad:"Salatlar", national:"Milliy taomlar", shashlik:"Kabob/Go'shtli taomlar", soup:"Sho'rvalar", grill:"Mangalda pishirilgan taomlar", drink:"Ichimliklar", bread:"Non"},
+  items:{
+    achichuk:"Achchiq-chuchuk", shakarop:"Shakarob", chirokchi:"Chiroqchi", greek:"Gretsiya salati", majnuntol:"Majnuntol", m_caprice:"Erkaklar injiqligi", d_caprice:"Ayollar injiqligi", 
+    olivye:"Olyvye", french:"Fransuzcha", smak:"Smak", caesar:"Sezar", b_eggplant:"Qarsildoq baqlajon", fresh:"Yangi",
+    molotiy:"Molotiy", molotiy_mix:"Molotiy miks", lamb_chunk:"Qo'zichoq go'shti", rulet:"Rulet", napoleon:"Napoleon", koreyka:"Koreyka", bykin:"Bykin", ribs:"Qovurg'alar",
+    liver:"Jigar", kurdyuk:"Quyruq yog'i", beef_tender:"Mol go'shti", chk_fillet:"Tovuq filesi", chk_wings:"Tovuq qanotlari", 
+    bomb:"Bombochka", chk_chop:"Tovuq otbivnoy", kotlety:"Kotlet 1 dona", cheburek:"Mangalda cheburek", sausage_spicy:"Achchiq kolbasa 1 dona", veg_mix:"Sabzavotli miks", sausage_milk:"Sutli kolbasa 1 dona", mushrooms:"Qo'ziqorinlar",
+    zb_l1kg:"Jiz Biz Qo'zi 1 kg", zb_l05kg:"Jiz Biz Qo'zi 0.5kg", zb_bt1kg:"Jiz Biz Mol go'shti 1 kg", zb_bt05kg:"Jiz Biz Mol go'shti 0.5kg", chk_steak:"Tovuq steyk", tbone_steak:"T-bone steyk 100gr", wagyu_steak:"Wagyu steyk", 
+    lamb_mush05kg:"Qo'ziqorinli qo'zi go'shti 0.5kg", lamb_mush1kg:"Qo'ziqorinli qo'zi go'shti 1 kg", bt_veg05kg:"Sabzavotli mol go'shti 0.5kg", bt_veg1kg:"Sabzavotli mol go'shti 1 kg",
+    shurpa:"Sho'rva", shchi_green:"Yashil shchi", borshch:"Smetanali borshch", guja:"Go'ja", mastava:"Mastava",
+    chk_gr_tea:"Choy Qora/ko'k", tea_lemon:"Limonli choy", fanta1l:"Fanta 1L", fanta15l:"Fanta 1.5L", cola1l:"Coca Cola 1L", cola15l:"Coca Cola 1.5L", juice:"Sharbat assorti 1L", 
+    pepsi1l:"Pepsi 1L", pepsi15l:"Pepsi 1.5L", water_min:"Mineral suv Chortoq 0.5L", water_still1l:"Gazsiz suv Chortoq 1L", water_still15l:"Gazsiz suv Chortoq 1.5L", 
+    tarhun:"Tarxun limonadi 0.5L", duches:"Dyushes limonadi 0.5L", energy:"Energetik Saber 0.5L",
+    bread_l:"Chap chak non 1 dona", tomatoes:"Pomidor 3 dona", potatoes:"Kartoshka 3 dona"
+  }
  },
  en:{
-  cart:"🛒 Cart", empty:"Cart is empty",
-  total:"Total", order:"✅ Place order"
- }
+  cart:"🛒 Cart", empty:"Cart is empty", total:"Total", order:"✅ Place order", 
+  valute:"sum", del:"🚚 Delivery", pick:"🏃 Pickup", addr:"📍 Delivery address",
+  cats:{salad:"Salads", national:"National dishes", shashlik:"Shashlik/Meat dishes", soup:"Soups", grill:"Grilled dishes", drink:"Drinks", bread:"Bread"},
+  items:{
+    achichuk:"Achichuk salad", shakarop:"Shakarop salad", chirokchi:"Chirokchi", greek:"Greek salad", majnuntol:"Majnuntol", m_caprice:"Men's caprice", d_caprice:"Ladies' caprice", 
+    olivye:"Olivier salad", french:"French salad", smak:"Smak salad", caesar:"Caesar salad", b_eggplant:"Crispy eggplant", fresh:"Fresh",
+    molotiy:"Minced meat shashlik", molotiy_mix:"Minced meat mix shashlik", lamb_chunk:"Lamb chunk shashlik", rulet:"Rulet", napoleon:"Napoleon", koreyka:"Loin shashlik", bykin:"Bykin shashlik", ribs:"Ribs (seeds)",
+    liver:"Liver shashlik", kurdyuk:"Fatty tail fat", beef_tender:"Beef tenderloin shashlik", chk_fillet:"Chicken fillet shashlik", chk_wings:"Chicken wings shashlik", 
+    bomb:"Bombochka (dish)", chk_chop:"Chicken chop", kotlety:"Cutlet 1 pc", cheburek:"Cheburek on grill", sausage_spicy:"Spicy sausage 1 pc", veg_mix:"Vegetable mix", sausage_milk:"Milk sausage 1 pc", mushrooms:"Mushrooms",
+    zb_l1kg:"Jiz Biz Lamb 1 kg", zb_l05kg:"Jiz Biz Lamb 0.5kg", zb_bt1kg:"Jiz Biz Beef 1 kg", zb_bt05kg:"Jiz Biz Beef 0.5kg", chk_steak:"Chicken steak", tbone_steak:"T-bone steak 100gr", wagyu_steak:"Wagyu steak", 
+    lamb_mush05kg:"Lamb with mushrooms 0.5kg", lamb_mush1kg:"Lamb with mushrooms 1 kg", bt_veg05kg:"Beef with vegetables 0.5kg", bt_veg1kg:"Beef with vegetables 1 kg",
+    shurpa:"Shurpa soup", shchi_green:"Green shchi", borshch:"Borshch with sour cream", guja:"Guja soup", mastava:"Mastava soup",
+    chk_gr_tea:"Tea Black/green", tea_lemon:"Tea with lemon", fanta1l:"Fanta 1L", fanta15l:"Fanta 1.5L", cola1l:"Coca Cola 1L", cola15l:"Coca Cola 1.5L", juice:"Juice assortment 1L", 
+    pepsi1l:"Pepsi 1L", pepsi15l:"Pepsi 1.5L", water_min:"Mineral water Chortoq 0.5L", water_still1l:"Still water Chortoq 1L", water_still15l:"Still water Chortoq 1.5L", 
+    tarhun:"Tarhun lemonade 0.5L", duches:"Duches lemonade 0.5L", energy:"Energy drink Saber 0.5L",
+    bread_l:"Chap chak flatbread 1 pc", tomatoes:"Tomatoes 3pcs", potatoes:"Potatoes 3pcs"
+  }
 };
 
 const menuData={
- "Шашлык":[["Шашлык куриный",45000],["Шашлык говяжий",60000]],
- "Первые блюда":[["Шурпа",35000]],
- "Национальные блюда":[["Плов",50000]],
- "Салаты":[["Оливье",30000]],
- "Напитки":[["Кола 1л",15000]],
- "Хлеб":[["Лепёшка",5000]]
+ salad:[{id:"achichuk",p:30000},{id:"shakarop",p:30000},{id:"chirokchi",p:30000},{id:"fresh",p:30000},{id:"greek",p:40000},{id:"majnuntol",p:30000},{id:"m_caprice",p:35000},{id:"d_caprice",p:35000},{id:"olivye",p:30000},{id:"french",p:35000},{id:"smak",p:35000},{id:"caesar",p:35000},{id:"b_eggplant",p:45000},{id:"veg_mix",p:15000}],
+ national:[{id:"zb_l1kg",p:260000},{id:"zb_l05kg",p:130000},{id:"zb_bt1kg",p:300000},{id:"zb_bt05kg",p:150000}],
+ shashlik:[{id:"molotiy",p:28000},{id:"molotiy_mix",p:30000},{id:"lamb_chunk",p:30000},{id:"rulet",p:30000},{id:"napoleon",p:30000},{id:"koreyka",p:40000},{id:"bykin",p:40000},{id:"ribs",p:30000},{id:"liver",p:22000},{id:"kurdyuk",p:30000},{id:"beef_tender",p:30000},{id:"chk_fillet",p:22000},{id:"chk_wings",p:22000},{id:"bomb",p:30000},{id:"chk_chop",p:35000},{id:"kotlety",p:30000},{id:"chk_steak",p:100000},{id:"tbone_steak",p:20000},{id:"wagyu_steak",p:200000}],
+ soup:[{id:"shurpa",p:35000},{id:"shchi_green",p:25000},{id:"borshch",p:25000},{id:"guja",p:25000},{id:"mastava",p:25000}],
+ grill:[{id:"cheburek",p:30000},{id:"sausage_spicy",p:17000},{id:"sausage_milk",p:17000},{id:"mushrooms",p:15000}],
+ drink:[{id:"chk_gr_tea",p:5000},{id:"tea_lemon",p:15000},{id:"fanta1l",p:14000},{id:"fanta15l",p:18000},{id:"cola1l",p:14000},{id:"cola15l",p:18000},{id:"juice",p:20000},{id:"pepsi1l",p:14000},{id:"pepsi15l",p:18000},{id:"water_min",p:15000},{id:"water_still1l",p:6000},{id:"water_still15l",p:8000},{id:"tarhun",p:12000},{id:"duches",p:12000},{id:"energy",p:15000}],
+ bread:[{id:"bread_l",p:10000},{id:"tomatoes",p:12000},{id:"potatoes",p:10000}]
 };
 
 function setLang(l,btn){
  lang=l;
  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
  btn.classList.add('active');
- document.getElementById('cart-title').innerText=texts[lang].cart;
- document.getElementById('total-label').innerText=texts[lang].total;
- document.getElementById('order-btn').innerText=texts[lang].order;
+ 
+ const t=translations[lang];
+ document.getElementById('cart-title').innerText=t.cart;
+ document.getElementById('total-label').innerText=t.total;
+ document.getElementById('order-btn').innerText=t.order;
+ document.getElementById('valute').innerText=t.valute;
+ document.getElementById('opt-del').innerText=t.del;
+ document.getElementById('opt-pick').innerText=t.pick;
+ document.getElementById('address').placeholder=t.addr;
+ 
+ renderCategories();
+ renderMenu();
  renderCart();
 }
 
 function renderCategories(){
  const div=document.getElementById("categories");
  div.innerHTML="";
- for(let c in menuData){
-  div.innerHTML+=`<button class="category-btn ${c===currentCategory?'active':''}" onclick="selectCategory('${c}',this)">${c}</button>`;
+ for(let catId in menuData){
+  const btn=document.createElement('button');
+  btn.className=`category-btn ${catId===currentCatId?'active':''}`;
+  btn.innerText=translations[lang].cats[catId];
+  btn.onclick=()=>{ currentCatId=catId; renderCategories(); renderMenu(); };
+  div.appendChild(btn);
  }
-}
-
-function selectCategory(cat,btn){
- currentCategory=cat;
- document.querySelectorAll('.category-btn').forEach(b=>b.classList.remove('active'));
- btn.classList.add('active');
- renderMenu();
 }
 
 function renderMenu(){
  const menu=document.getElementById("menu");
  menu.innerHTML="";
- menuData[currentCategory].forEach(i=>{
-  cart[i[0]]=cart[i[0]]||0;
+ menuData[currentCatId].forEach(item=>{
+  cart[item.id]=cart[item.id]||0;
   menu.innerHTML+=`
    <div class="card">
-    <div class="title">${i[0]}</div>
-    <div class="price">${i[1]} сум</div>
+    <div>
+     <div class="title">${translations[lang].items[item.id] || item.id}</div>
+     <div class="price">${item.p} ${translations[lang].valute}</div>
+    </div>
     <div class="controls">
-     <button class="minus" onclick="change('${i[0]}',-1)">−</button>
-     <span>${cart[i[0]]}</span>
-     <button class="plus" onclick="change('${i[0]}',1)">+</button>
+     <button class="minus" onclick="change('${item.id}',-1)">−</button>
+     <span>${cart[item.id]}</span>
+     <button class="plus" onclick="change('${item.id}',1)">+</button>
     </div>
    </div>`;
  });
 }
 
-function change(n,d){
- cart[n]+=d;
- if(cart[n]<0)cart[n]=0;
+function change(id,d){
+ cart[id]+=d;
+ if(cart[id]<0)cart[id]=0;
  renderMenu();
  renderCart();
 }
@@ -155,46 +192,49 @@ function renderCart(){
  const div=document.getElementById("cart-items");
  div.innerHTML="";
  let total=0,empty=true;
- for(let i in cart){
-  if(cart[i]>0){
+ for(let id in cart){
+  if(cart[id]>0){
    empty=false;
-   const p=findPrice(i);
-   total+=cart[i]*p;
-   div.innerHTML+=`<div class="cart-item"><span>${i} × ${cart[i]}</span><span>${cart[i]*p} сум</span></div>`;
+   const price=findPrice(id);
+   total+=cart[id]*price;
+   div.innerHTML+=`<div class="cart-item"><span>${translations[lang].items[id] || id} × ${cart[id]}</span><span>${cart[id]*price}</span></div>`;
   }
  }
- if(empty)div.innerText=texts[lang].empty;
+ if(empty)div.innerText=translations[lang].empty;
  document.getElementById("total").innerText=total;
 }
 
-function findPrice(n){
- for(let c in menuData)for(let i of menuData[c])if(i[0]==n)return i[1];
+function findPrice(id){
+ for(let c in menuData)for(let i of menuData[c])if(i.id==id)return i.p;
  return 0;
 }
 
 function toggleAddress(){
- address.style.display=delivery.value==="delivery"?"block":"none";
+ document.getElementById('address').style.display=document.getElementById('delivery').value==="delivery"?"block":"none";
 }
 
 function sendOrder(){
  const phone=document.getElementById("phone").value.trim();
- if(!phone)return alert("Введите телефон");
+ if(!phone)return alert(lang==='ru'?"Введите телефон":lang==='uz'?"Telefonni kiriting":"Enter phone");
+ 
+ const orderSummary = {};
+ for(let id in cart) if(cart[id]>0) orderSummary[translations[lang].items[id] || id] = cart[id];
+
  Telegram.WebApp.sendData(JSON.stringify({
-  order:cart,
-  total:Number(document.getElementById("total").innerText),
+  order:orderSummary,
+  total:document.getElementById("total").innerText,
   phone,
-  delivery:delivery.value,
-  address:address.value
+  address:document.getElementById("address").value
  }));
  Telegram.WebApp.close();
 }
 
-renderCategories();
-renderMenu();
+setLang('ru', document.querySelector('.lang-btn'));
 </script>
 
 </body>
 </html>
+
 
 
 
