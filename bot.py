@@ -14,8 +14,8 @@ dp = Dispatcher(bot)
 
 @dp.message_handler(commands=["start"])
 async def start(message: types.Message):
-    kb = types.InlineKeyboardMarkup()
-    kb.add(
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(
         types.InlineKeyboardButton(
             "🍽 Открыть меню",
             web_app=types.WebAppInfo(
@@ -25,46 +25,50 @@ async def start(message: types.Message):
     )
     await message.answer(
         "👋 Добро пожаловать!\nНажмите кнопку ниже, чтобы сделать заказ.",
-        reply_markup=kb
+        reply_markup=keyboard
     )
 
 
 @dp.message_handler(content_types=types.ContentType.WEB_APP_DATA)
 async def get_order(message: types.Message):
-    try:
-        data = json.loads(message.web_app_data.data)
-    except Exception as e:
-        await bot.send_message(ADMIN_ID, f"❌ Ошибка данных: {e}")
-        return
+    data = json.loads(message.web_app_data.data)
 
     order = data.get("order", {})
-    total = data.get("total", "0")
-    lang = data.get("lang", "ru")
+    phone = data.get("phone", "—")
+    comment = data.get("comment", "—")
+    total = data.get("total", 0)
     delivery = data.get("delivery", "—")
     address = data.get("address", "—")
+    lang = data.get("lang", "ru")
 
-    items = "\n".join(
+    user = message.from_user
+    username = f"@{user.username}" if user.username else "—"
+    fullname = f"{user.first_name or ''} {user.last_name or ''}".strip()
+
+    items_text = "\n".join(
         f"• {name} × {qty}"
         for name, qty in order.items()
+        if qty > 0
     )
 
     admin_text = (
         "📥 <b>НОВЫЙ ЗАКАЗ</b>\n\n"
-        f"👤 ID: <code>{message.from_user.id}</code>\n"
+        f"👤 Пользователь: {username} ({fullname})\n"
+        f"🆔 ID: <code>{user.id}</code>\n"
+        f"📞 Телефон: {phone}\n"
+        f"💬 Комментарий: {comment}\n\n"
         f"🚚 Тип: {delivery}\n"
         f"📍 Адрес: {address}\n\n"
-        f"{items}\n\n"
+        f"{items_text}\n\n"
         f"💰 <b>{total} сум</b>"
     )
 
-    # 🔔 админу
     await bot.send_message(ADMIN_ID, admin_text)
 
-    # ✅ клиенту
     replies = {
         "ru": "✅ Заказ принят! Мы скоро свяжемся с вами.",
-        "uz": "✅ Buyurtma qabul qilindi!",
-        "en": "✅ Order received! We will contact you."
+        "uz": "✅ Buyurtma qabul qilindi! Tez orada bog‘lanamiz.",
+        "en": "✅ Order received! We will contact you shortly."
     }
 
     await message.answer(replies.get(lang, replies["ru"]))
