@@ -19,15 +19,18 @@ dp = Dispatcher(bot)
 # === /start ===
 @dp.message_handler(commands=["start"])
 async def start(message: types.Message):
-    keyboard = types.InlineKeyboardMarkup()
+    keyboard = types.ReplyKeyboardMarkup(
+        resize_keyboard=True
+    )
     keyboard.add(
-        types.InlineKeyboardButton(
-            "🍽 Открыть меню",
+        types.KeyboardButton(
+            text="🍽 Открыть меню",
             web_app=types.WebAppInfo(
                 url="https://tahirovdd-lang.github.io/radj-shashlik-bot/"
             )
         )
     )
+
     await message.answer(
         "👋 Добро пожаловать!\nНажмите кнопку ниже, чтобы сделать заказ.",
         reply_markup=keyboard
@@ -72,13 +75,13 @@ async def get_order(message: types.Message):
         f"💰 <b>{total} сум</b>"
     )
 
-    # 🔴 ВАЖНО: админ получает ВСЕГДА
+    # 👉 Админу (обязательно)
     try:
         await bot.send_message(ADMIN_ID, admin_message)
     except Exception as e:
         logging.error(f"Admin send error: {e}")
 
-    # 🟡 Google Sheets — вторично
+    # 👉 Google Sheets (вторично)
     try:
         requests.post(
             GOOGLE_SCRIPT_URL,
@@ -108,6 +111,7 @@ async def get_order(message: types.Message):
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
+
 
 
 
