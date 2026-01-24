@@ -3,80 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <title>Radj Shashlik</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-*{box-sizing:border-box}
-body{
-  font-family:Arial,sans-serif;
-  background:#f5f5f5;
-  margin:0;
-  padding:10px 10px 90px;
-}
-.logo-container{display:flex;justify-content:center;margin-top:5px}
-.logo{width:90px;border-radius:14px}
-h2,h3{text-align:center;margin:8px 0}
-
-.lang-wrap{display:flex;justify-content:center;gap:8px;margin:10px 0}
-.lang-btn{
-  padding:8px 14px;border:none;border-radius:20px;
-  background:#e0e0e0;font-weight:bold
-}
-.lang-btn.active{background:#0088cc;color:#fff}
-
-#categories{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px}
-.category-btn{
-  padding:8px 14px;border:none;border-radius:20px;
-  background:#eee;font-size:14px
-}
-.category-btn.active{background:#0088cc;color:#fff}
+body{font-family:Arial;background:#f5f5f5;margin:0;padding:10px 10px 90px}
+.logo{text-align:center;margin-bottom:10px}
+.logo img{width:90px;border-radius:14px}
+h2{text-align:center}
 
 .card{
   background:#fff;border-radius:14px;padding:12px;margin-bottom:10px;
   display:flex;justify-content:space-between;align-items:center
 }
-.price{color:#2ecc71;font-weight:bold}
-
-.controls{display:flex;align-items:center;gap:8px}
 .controls button{
-  width:36px;height:36px;border:none;border-radius:50%;
-  font-size:20px
+  width:36px;height:36px;border:none;border-radius:50%;font-size:18px
 }
 .plus{background:#4CAF50;color:#fff}
 .minus{background:#ddd}
+.price{color:#2ecc71;font-weight:bold}
 
-.cart{background:#fff;border-radius:14px;padding:14px;margin-top:10px}
-.cart-item{display:flex;justify-content:space-between;margin:4px 0}
-
-input,select{
+.cart{
+  background:#fff;border-radius:14px;padding:12px;margin-top:10px
+}
+input{
   width:100%;padding:12px;margin-top:10px;
-  border-radius:10px;border:1px solid #ccc;font-size:16px
+  border-radius:10px;border:1px solid #ccc
 }
 </style>
 </head>
 
 <body>
 
-<div class="logo-container">
-  <img src="logo.png" class="logo">
+<div class="logo">
+  <img src="logo.png">
 </div>
 
 <h2>🍽 Radj Shashlik</h2>
 
-<div class="lang-wrap">
-  <button class="lang-btn active" onclick="setLang('ru',this)">🇷🇺 RU</button>
-  <button class="lang-btn" onclick="setLang('uz',this)">🇺🇿 UZ</button>
-  <button class="lang-btn" onclick="setLang('en',this)">🇬🇧 EN</button>
-</div>
-
-<div id="categories"></div>
 <div id="menu"></div>
 
 <div class="cart">
-  <h3 id="cart-title">🛒 Корзина</h3>
-  <div id="cart-items">Корзина пуста</div>
-  <div><b id="total-label">Итого:</b> <span id="total">0</span> сум</div>
+  <b>🛒 Корзина</b>
+  <div id="cart">Корзина пуста</div>
+  <div><b>Итого:</b> <span id="total">0</span> сум</div>
 </div>
 
 <input id="phone" placeholder="📱 Телефон">
@@ -86,96 +56,57 @@ const tg = Telegram.WebApp;
 tg.ready();
 tg.expand();
 
-let lang="ru";
-let currentCategory="Шашлык";
-const cart={};
-
-const texts={
-  ru:{cart:"Корзина",empty:"Корзина пуста",total:"Итого",btn:"Оформить заказ"},
-  uz:{cart:"Savat",empty:"Savat bo‘sh",total:"Jami",btn:"Buyurtma berish"},
-  en:{cart:"Cart",empty:"Cart is empty",total:"Total",btn:"Place order"}
+const menu = {
+  "Шашлык куриный": 45000,
+  "Шашлык говяжий": 60000,
+  "Плов": 50000,
+  "Шурпа": 35000,
+  "Лепёшка": 5000
 };
 
-const menuData={
-  "Шашлык":[["Шашлык куриный",45000],["Шашлык говяжий",60000]],
-  "Первые блюда":[["Шурпа",35000]],
-  "Национальные блюда":[["Плов",50000]],
-  "Салаты":[["Оливье",30000]],
-  "Напитки":[["Кола 1л",15000]],
-  "Хлеб":[["Лепёшка",5000]]
-};
+const cart = {};
 
-function setLang(l,btn){
-  lang=l;
-  document.querySelectorAll(".lang-btn").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  renderAll();
-}
-
-function renderCategories(){
-  const div=document.getElementById("categories");
-  div.innerHTML="";
-  for(let c in menuData){
-    const b=document.createElement("button");
-    b.className="category-btn"+(c===currentCategory?" active":"");
-    b.innerText=c;
-    b.onclick=()=>{currentCategory=c;renderCategories();renderMenu();};
-    div.appendChild(b);
-  }
-}
-
-function renderMenu(){
-  const menu=document.getElementById("menu");
-  menu.innerHTML="";
-  menuData[currentCategory].forEach(([n,p])=>{
+function render(){
+  const m=document.getElementById("menu");
+  m.innerHTML="";
+  for(let n in menu){
     if(!cart[n]) cart[n]=0;
-    menu.innerHTML+=`
+    m.innerHTML+=`
       <div class="card">
-        <div><b>${n}</b><div class="price">${p} сум</div></div>
+        <div>
+          <b>${n}</b>
+          <div class="price">${menu[n]} сум</div>
+        </div>
         <div class="controls">
-          <button class="minus" onclick="change('${n}',-1)">−</button>
+          <button class="minus" onclick="add('${n}',-1)">−</button>
           <span>${cart[n]}</span>
-          <button class="plus" onclick="change('${n}',1)">+</button>
+          <button class="plus" onclick="add('${n}',1)">+</button>
         </div>
       </div>`;
-  });
+  }
+  updateCart();
 }
 
-function change(n,d){
+function add(n,d){
   cart[n]=Math.max(0,cart[n]+d);
-  renderMenu();
-  renderCart();
+  render();
 }
 
-function renderCart(){
-  const div=document.getElementById("cart-items");
-  div.innerHTML="";
-  let total=0,has=false;
-
+function updateCart(){
+  let t=0,html="";
   for(let i in cart){
     if(cart[i]>0){
-      has=true;
-      const p=findPrice(i);
-      total+=cart[i]*p;
-      div.innerHTML+=`<div class="cart-item"><span>${i} × ${cart[i]}</span><span>${cart[i]*p} сум</span></div>`;
+      t+=cart[i]*menu[i];
+      html+=`${i} × ${cart[i]}<br>`;
     }
   }
-  if(!has) div.innerText=texts[lang].empty;
-  document.getElementById("total").innerText=total;
+  document.getElementById("cart").innerHTML=html||"Корзина пуста";
+  document.getElementById("total").innerText=t;
 
-  if(total>0){
-    tg.MainButton.setText(texts[lang].btn+" • "+total+" сум");
+  if(t>0){
+    tg.MainButton.setText("Оформить заказ • "+t+" сум");
     tg.MainButton.show();
-  }else{
-    tg.MainButton.hide();
-  }
-}
-
-function findPrice(n){
-  for(let c in menuData)
-    for(let i of menuData[c])
-      if(i[0]==n) return i[1];
-  return 0;
+  }else tg.MainButton.hide();
 }
 
 tg.MainButton.onClick(()=>{
@@ -186,31 +117,25 @@ tg.MainButton.onClick(()=>{
   }
 
   tg.sendData(JSON.stringify({
-    order:cart,
-    total:document.getElementById("total").innerText,
-    phone:phone,
-    lang:lang
+    order: cart,
+    total: document.getElementById("total").innerText,
+    phone: phone,
+    lang: "ru"
   }));
 
   tg.showPopup({
-    title:"Заказ принят",
-    message:"Мы получили ваш заказ 👍",
+    title:"Готово",
+    message:"Заказ отправлен 👍",
     buttons:[{type:"ok"}]
   });
 });
 
-function renderAll(){
-  document.getElementById("cart-title").innerText=texts[lang].cart;
-  document.getElementById("total-label").innerText=texts[lang].total;
-  renderCategories();
-  renderMenu();
-  renderCart();
-}
-
-renderAll();
+render();
 </script>
+
 </body>
 </html>
+
 
 
 
