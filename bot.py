@@ -8,7 +8,6 @@ from aiogram import Bot, Dispatcher, executor, types
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = 6013591658
 
-# 🔗 ТВОЙ GOOGLE SCRIPT
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSG6M86JhMZr34RI1ajn3xZhEJDXsbX44tiXGiW-YtXLGY9X2T59HBpHs2CrRuuy49/exec"
 
 logging.basicConfig(level=logging.INFO)
@@ -38,7 +37,11 @@ async def start(message: types.Message):
 # === ПРИЁМ ЗАКАЗА ИЗ WEB APP ===
 @dp.message_handler(content_types=types.ContentType.WEB_APP_DATA)
 async def get_order(message: types.Message):
-    data = json.loads(message.web_app_data.data)
+    try:
+        data = json.loads(message.web_app_data.data)
+    except Exception as e:
+        logging.error(f"JSON error: {e}")
+        return
 
     order = data.get("order", {})
     phone = data.get("phone", "—")
@@ -48,21 +51,18 @@ async def get_order(message: types.Message):
     delivery = data.get("delivery", "—")
     address = data.get("address", "—")
 
-    username = (
-        f"@{message.from_user.username}"
-        if message.from_user.username
-        else "—"
-    )
+    user = message.from_user
+    username = f"@{user.username}" if user.username else "—"
 
     items_text = "\n".join(
         f"• {name} × {qty}"
         for name, qty in order.items()
         if qty > 0
-    )
+    ) or "—"
 
     admin_message = (
         "📥 <b>НОВЫЙ ЗАКАЗ</b>\n\n"
-        f"👤 ID: <code>{message.from_user.id}</code>\n"
+        f"👤 ID: <code>{user.id}</code>\n"
         f"👤 Ник: {username}\n"
         f"📞 Телефон: {phone}\n"
         f"🚚 Тип: {delivery}\n"
@@ -72,15 +72,18 @@ async def get_order(message: types.Message):
         f"💰 <b>{total} сум</b>"
     )
 
-    # 👉 ОТПРАВКА АДМИНУ
-    await bot.send_message(ADMIN_ID, admin_message)
+    # 🔴 ВАЖНО: админ получает ВСЕГДА
+    try:
+        await bot.send_message(ADMIN_ID, admin_message)
+    except Exception as e:
+        logging.error(f"Admin send error: {e}")
 
-    # 👉 ОТПРАВКА В GOOGLE SHEETS
+    # 🟡 Google Sheets — вторично
     try:
         requests.post(
             GOOGLE_SCRIPT_URL,
             json={
-                "user_id": message.from_user.id,
+                "user_id": user.id,
                 "username": username,
                 "phone": phone,
                 "delivery": delivery,
@@ -94,7 +97,6 @@ async def get_order(message: types.Message):
     except Exception as e:
         logging.error(f"Google Sheets error: {e}")
 
-    # 👉 ОТВЕТ КЛИЕНТУ
     replies = {
         "ru": "✅ Заказ принят! Мы скоро свяжемся с вами.",
         "uz": "✅ Buyurtma qabul qilindi! Tez orada bog‘lanamiz.",
