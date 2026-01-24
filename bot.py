@@ -1,78 +1,70 @@
-import logging
-import json
 import os
-from aiogram import Bot, Dispatcher, executor, types
+from aiogram import Bot, Dispatcher, types
+from aiogram.utils import executor
+from menu import MENU
+from texts import TEXTS
 
-# ================= НАСТРОЙКИ =================
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = 6013591658
-WEBAPP_URL = "https://tahirovdd-lang.github.io/radj-shashlik-bot/"
-
-logging.basicConfig(level=logging.INFO)
-
-bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
+bot = Bot(token=os.getenv("BOT_TOKEN"))
 dp = Dispatcher(bot)
 
-# ================= /start =================
+user_lang = {}
+user_delivery = {}
+
 @dp.message_handler(commands=["start"])
-async def start(message: types.Message):
-    kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+async def start(msg: types.Message):
+    kb = types.InlineKeyboardMarkup()
     kb.add(
-        types.KeyboardButton(
-            "🍽 Открыть меню",
-            web_app=types.WebAppInfo(url=WEBAPP_URL)
-        )
+        types.InlineKeyboardButton("🇷🇺 RU", callback_data="lang_ru"),
+        types.InlineKeyboardButton("🇺🇿 UZ", callback_data="lang_uz"),
+        types.InlineKeyboardButton("🇬🇧 EN", callback_data="lang_en"),
     )
+    await msg.answer("Выберите язык / Tilni tanlang / Choose language", reply_markup=kb)
 
-    await message.answer(
-        "👋 Добро пожаловать!\nНажмите кнопку ниже 👇",
-        reply_markup=kb
+@dp.callback_query_handler(lambda c: c.data.startswith("lang_"))
+async def set_lang(call: types.CallbackQuery):
+    lang = call.data.split("_")[1]
+    user_lang[call.from_user.id] = lang
+
+    kb = types.InlineKeyboardMarkup()
+    kb.add(
+        types.InlineKeyboardButton(TEXTS["delivery"][lang], callback_data="delivery"),
+        types.InlineKeyboardButton(TEXTS["pickup"][lang], callback_data="pickup"),
     )
+    await call.message.edit_text("Тип заказа:", reply_markup=kb)
 
-# ================= ПРИЁМ ДАННЫХ ИЗ WEBAPP =================
-@dp.message_handler(content_types=types.ContentType.WEB_APP_DATA)
-async def webapp(message: types.Message):
-    try:
-        logging.info(f"WEBAPP DATA: {message.web_app_data.data}")
+@dp.callback_query_handler(lambda c: c.data in ["delivery", "pickup"])
+async def order_type(call: types.CallbackQuery):
+    lang = user_lang.get(call.from_user.id, "ru")
 
-        data = json.loads(message.web_app_data.data)
+    if call.data == "delivery":
+        await call.message.answer(TEXTS["enter_address"][lang])
+        return
 
-        order = data.get("order", {})
-        phone = data.get("phone", "—")
-        lang = data.get("lang", "ru")
-        total = int(data.get("total", 0))
-        delivery = data.get("delivery", "—")
+    await show_categories(call.message, lang)
 
-        items = "\n".join(
-            [f"• {name} × {count}" for name, count in order.items() if count > 0]
-        )
+@dp.message_handler()
+async def save_address(msg: types.Message):
+    user_delivery[msg.from_user.id] = msg.text
+    lang = user_lang.get(msg.from_user.id, "ru")
+    await show_categories(msg, lang)
 
-        admin_text = (
-            "📥 <b>НОВЫЙ ЗАКАЗ</b>\n\n"
-            f"👤 ID: <code>{message.from_user.id}</code>\n"
-            f"📞 Телефон: {phone}\n"
-            f"🚚 Способ: {delivery}\n\n"
-            f"{items}\n\n"
-            f"💰 <b>{total} сум</b>"
-        )
+async def show_categories(msg, lang):
+    kb = types.InlineKeyboardMarkup(row_width=2)
+    for key, cat in MENU.items():
+        kb.add(types.InlineKeyboardButton(cat[lang], callback_data=f"cat_{key}"))
+    await msg.answer("🍽 Меню", reply_markup=kb)
 
-        await bot.send_message(ADMIN_ID, admin_text)
+@dp.callback_query_handler(lambda c: c.data.startswith("cat_"))
+async def show_items(call: types.CallbackQuery):
+    lang = user_lang.get(call.from_user.id, "ru")
+    cat = MENU[call.data.replace("cat_", "")]
+    text = f"{cat[lang]}\n\n"
+    for name, price in cat["items"]:
+        text += f"• {name} — {price} сум\n"
+    await call.message.answer(text)
 
-        replies = {
-            "ru": "✅ Заказ принят! Мы свяжемся с вами.",
-            "uz": "✅ Buyurtma qabul qilindi! Tez orada bog‘lanamiz.",
-            "en": "✅ Order received! We will contact you."
-        }
-
-        await message.answer(replies.get(lang, replies["ru"]))
-
-    except Exception as e:
-        logging.exception("Ошибка обработки заказа")
-        await message.answer("❌ Ошибка при оформлении заказа. Попробуйте ещё раз.")
-
-# ================= ЗАПУСК =================
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
+    executor.start_polling(dp)
 
 
 
