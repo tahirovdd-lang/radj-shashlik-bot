@@ -2,13 +2,10 @@ import logging
 import json
 from aiogram import Bot, Dispatcher, executor, types
 
-# 🔑 ВСТАВЬ ТОКЕН ОТ BOTFATHER
+# 🔑 ВСТАВЬ ТОКЕН НАПРЯМУЮ
 BOT_TOKEN = "8525626062:AAGqnee7mzlP9OjrEOYYirzArf2MYgIK95Q"
 
-# 👤 ТВОЙ TELEGRAM ID
 ADMIN_ID = 6013591658
-
-# 🌐 GITHUB PAGES URL
 WEBAPP_URL = "https://tahirovdd-lang.github.io/radj-shashlik-bot/"
 
 logging.basicConfig(level=logging.INFO)
@@ -21,29 +18,36 @@ async def start(message: types.Message):
     kb = types.InlineKeyboardMarkup()
     kb.add(
         types.InlineKeyboardButton(
-            text="🍽 Открыть меню",
+            "🍽 Открыть меню",
             web_app=types.WebAppInfo(url=WEBAPP_URL)
         )
     )
-    await message.answer(
-        "👋 Добро пожаловать!\nНажмите кнопку ниже, чтобы сделать заказ 👇",
-        reply_markup=kb
-    )
+    await message.answer("👋 Добро пожаловать!", reply_markup=kb)
 
 @dp.message_handler(content_types=types.ContentType.WEB_APP_DATA)
-async def webapp_handler(message: types.Message):
-    data = json.loads(message.web_app_data.data)
+async def webapp(message: types.Message):
+    try:
+        logging.info(f"WEBAPP DATA: {message.web_app_data.data}")
+        data = json.loads(message.web_app_data.data)
+    except Exception as e:
+        logging.error(e)
+        await message.answer("❌ Ошибка обработки заказа")
+        return
 
     order = data.get("order", {})
     phone = data.get("phone", "—")
-    total = data.get("total", 0)
     lang = data.get("lang", "ru")
 
+    try:
+        total = int(data.get("total", 0))
+    except:
+        total = 0
+
     items = "\n".join(
-        [f"• {name} × {count}" for name, count in order.items() if count > 0]
+        [f"• {k} × {v}" for k, v in order.items() if v > 0]
     )
 
-    text = (
+    admin_text = (
         "📥 <b>НОВЫЙ ЗАКАЗ</b>\n\n"
         f"👤 ID: <code>{message.from_user.id}</code>\n"
         f"📞 Телефон: {phone}\n\n"
@@ -51,10 +55,10 @@ async def webapp_handler(message: types.Message):
         f"💰 <b>{total} сум</b>"
     )
 
-    await bot.send_message(ADMIN_ID, text)
+    await bot.send_message(ADMIN_ID, admin_text)
 
     replies = {
-        "ru": "✅ Заказ принят! Мы скоро свяжемся с вами.",
+        "ru": "✅ Заказ принят! Мы свяжемся с вами.",
         "uz": "✅ Buyurtma qabul qilindi!",
         "en": "✅ Order received!"
     }
@@ -63,6 +67,7 @@ async def webapp_handler(message: types.Message):
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
+
 
 
 
