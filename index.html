@@ -8,56 +8,30 @@
 
 <style>
 *{box-sizing:border-box}
-body{
-  font-family:Arial,sans-serif;
-  background:#f5f5f5;
-  margin:0;
-  padding:10px 10px 90px;
-}
+body{font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:10px 10px 90px}
 .logo-container{display:flex;justify-content:center;margin-top:5px}
 .logo{width:90px;border-radius:14px}
 h2,h3{text-align:center;margin:8px 0}
-
 .lang-wrap{display:flex;justify-content:center;gap:8px;margin:10px 0}
-.lang-btn{
-  padding:8px 14px;border:none;border-radius:20px;
-  background:#e0e0e0;font-weight:bold
-}
+.lang-btn{padding:8px 14px;border:none;border-radius:20px;background:#e0e0e0;font-weight:bold}
 .lang-btn.active{background:#0088cc;color:#fff}
-
 #categories{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px}
-.category-btn{
-  padding:8px 14px;border:none;border-radius:20px;
-  background:#eee;font-size:14px
-}
+.category-btn{padding:8px 14px;border:none;border-radius:20px;background:#eee;font-size:14px}
 .category-btn.active{background:#0088cc;color:#fff}
-
-.card{
-  background:#fff;border-radius:14px;padding:12px;margin-bottom:10px;
-  display:flex;justify-content:space-between;align-items:center
-}
+.card{background:#fff;border-radius:14px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
 .price{color:#2ecc71;font-weight:bold}
-
 .controls{display:flex;align-items:center;gap:8px}
-.controls button{
-  width:36px;height:36px;border:none;border-radius:50%;
-  font-size:20px
-}
+.controls button{width:36px;height:36px;border:none;border-radius:50%;font-size:20px}
 .plus{background:#4CAF50;color:#fff}
 .minus{background:#ddd}
-
 .cart{background:#fff;border-radius:14px;padding:14px;margin-top:10px}
 .cart-item{display:flex;justify-content:space-between;margin:4px 0}
-
-input,select{
-  width:100%;padding:12px;margin-top:10px;
-  border-radius:10px;border:1px solid #ccc;font-size:16px
-}
+input,select{width:100%;padding:12px;margin-top:10px;border-radius:10px;border:1px solid #ccc;font-size:16px}
+button.order-btn{width:100%;padding:14px;border:none;border-radius:14px;background:#0088cc;color:#fff;font-size:18px;margin-top:10px}
 </style>
 </head>
 
 <body>
-
 <div class="logo-container">
   <img src="logo.png" class="logo">
 </div>
@@ -79,7 +53,14 @@ input,select{
   <div><b id="total-label">Итого:</b> <span id="total">0</span> сум</div>
 </div>
 
+<select id="delivery">
+  <option value="Доставка">🚚 Доставка</option>
+  <option value="Самовывоз">🏃‍♂️ Самовывоз</option>
+</select>
+
 <input id="phone" placeholder="📱 Телефон">
+
+<button class="order-btn" onclick="sendOrder()">Оформить заказ</button>
 
 <script>
 const tg = Telegram.WebApp;
@@ -162,13 +143,6 @@ function renderCart(){
   }
   if(!has) div.innerText=texts[lang].empty;
   document.getElementById("total").innerText=total;
-
-  if(total>0){
-    tg.MainButton.setText(texts[lang].btn+" • "+total+" сум");
-    tg.MainButton.show();
-  }else{
-    tg.MainButton.hide();
-  }
 }
 
 function findPrice(n){
@@ -178,26 +152,21 @@ function findPrice(n){
   return 0;
 }
 
-tg.MainButton.onClick(()=>{
+function sendOrder(){
   const phone=document.getElementById("phone").value.trim();
-  if(!phone){
-    tg.showAlert("Введите телефон");
-    return;
-  }
+  if(!phone){alert("Введите телефон"); return;}
+  const delivery=document.getElementById("delivery").value;
 
   tg.sendData(JSON.stringify({
     order:cart,
     total:document.getElementById("total").innerText,
     phone:phone,
-    lang:lang
+    lang:lang,
+    delivery:delivery
   }));
 
-  tg.showPopup({
-    title:"Заказ принят",
-    message:"Мы получили ваш заказ 👍",
-    buttons:[{type:"ok"}]
-  });
-});
+  alert("✅ Заказ принят! Мы получили ваш заказ 👍");
+}
 
 function renderAll(){
   document.getElementById("cart-title").innerText=texts[lang].cart;
@@ -211,6 +180,7 @@ renderAll();
 </script>
 </body>
 </html>
+
 
 
 
