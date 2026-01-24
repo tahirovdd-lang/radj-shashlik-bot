@@ -1,45 +1,42 @@
 import logging
 import json
-from aiogram import Bot, Dispatcher, executor, types
+import os
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from aiogram.filters import Command
 
-# 🔑 ВСТАВЬ ТОКЕН НАПРЯМУЮ
-BOT_TOKEN = "8525626062:AAGqnee7mzlP9OjrEOYYirzArf2MYgIK95Q"
-
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = 6013591658
 WEBAPP_URL = "https://tahirovdd-lang.github.io/radj-shashlik-bot/"
 
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
-dp = Dispatcher(bot)
+dp = Dispatcher()
 
-@dp.message_handler(commands=["start"])
+# /start
+@dp.message(Command("start"))
 async def start(message: types.Message):
-    kb = types.InlineKeyboardMarkup()
-    kb.add(types.InlineKeyboardButton(
-        "🍽 Открыть меню",
-        web_app=types.WebAppInfo(url=WEBAPP_URL)
-    ))
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton("🍽 Открыть меню", web_app=WebAppInfo(url=WEBAPP_URL))]
+        ]
+    )
     await message.answer("👋 Добро пожаловать!", reply_markup=kb)
 
-@dp.message_handler(content_types=types.ContentType.WEB_APP_DATA)
+# WebApp data
+@dp.message()
 async def webapp(message: types.Message):
-    try:
-        logging.info(f"WEBAPP DATA: {message.web_app_data.data}")
-        data = json.loads(message.web_app_data.data)
-    except Exception as e:
-        logging.error(f"JSON ERROR: {e}")
+    if not message.web_app_data:
         return
 
+    logging.info(f"WEBAPP DATA: {message.web_app_data.data}")
+
+    data = json.loads(message.web_app_data.data)
     order = data.get("order", {})
     phone = data.get("phone", "—")
     lang = data.get("lang", "ru")
-
-    # безопасное получение суммы
-    try:
-        total = int(data.get("total", 0))
-    except:
-        total = 0
+    total = int(data.get("total", 0))
 
     items = "\n".join([f"• {k} × {v}" for k, v in order.items() if v > 0])
 
@@ -62,9 +59,15 @@ async def webapp(message: types.Message):
     await message.answer(replies.get(lang, replies["ru"]))
 
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
+    from aiogram import F
+    from aiogram.fsm.storage.memory import MemoryStorage
+    from aiogram import Router
+    from aiogram import Dispatcher
+    from aiogram import executor
 
-
+    dp = Dispatcher(storage=MemoryStorage())
+    dp.include_router(Router())
+    executor.start_polling(dp)
 
 
 
