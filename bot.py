@@ -16,12 +16,10 @@ dp = Dispatcher(bot)
 @dp.message_handler(commands=["start"])
 async def start(message: types.Message):
     kb = types.InlineKeyboardMarkup()
-    kb.add(
-        types.InlineKeyboardButton(
-            "🍽 Открыть меню",
-            web_app=types.WebAppInfo(url=WEBAPP_URL)
-        )
-    )
+    kb.add(types.InlineKeyboardButton(
+        "🍽 Открыть меню",
+        web_app=types.WebAppInfo(url=WEBAPP_URL)
+    ))
     await message.answer("👋 Добро пожаловать!", reply_markup=kb)
 
 @dp.message_handler(content_types=types.ContentType.WEB_APP_DATA)
@@ -30,22 +28,20 @@ async def webapp(message: types.Message):
         logging.info(f"WEBAPP DATA: {message.web_app_data.data}")
         data = json.loads(message.web_app_data.data)
     except Exception as e:
-        logging.error(e)
-        await message.answer("❌ Ошибка обработки заказа")
+        logging.error(f"JSON ERROR: {e}")
         return
 
     order = data.get("order", {})
     phone = data.get("phone", "—")
     lang = data.get("lang", "ru")
 
+    # безопасное получение суммы
     try:
         total = int(data.get("total", 0))
     except:
         total = 0
 
-    items = "\n".join(
-        [f"• {k} × {v}" for k, v in order.items() if v > 0]
-    )
+    items = "\n".join([f"• {k} × {v}" for k, v in order.items() if v > 0])
 
     admin_text = (
         "📥 <b>НОВЫЙ ЗАКАЗ</b>\n\n"
@@ -67,6 +63,7 @@ async def webapp(message: types.Message):
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
+
 
 
 
