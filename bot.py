@@ -3,6 +3,7 @@ import json
 import logging
 import requests
 from aiogram import Bot, Dispatcher, executor, types
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # === НАСТРОЙКИ ===
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -19,9 +20,7 @@ dp = Dispatcher(bot)
 # === /start ===
 @dp.message_handler(commands=["start"])
 async def start(message: types.Message):
-    keyboard = types.ReplyKeyboardMarkup(
-        resize_keyboard=True
-    )
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     keyboard.add(
         types.KeyboardButton(
             text="🍽 Открыть меню",
@@ -53,6 +52,7 @@ async def get_order(message: types.Message):
     lang = data.get("lang", "ru")
     delivery = data.get("delivery", "—")
     address = data.get("address", "—")
+    payment = data.get("payment", "cash")  # 👈 ВАЖНО
 
     user = message.from_user
     username = f"@{user.username}" if user.username else "—"
@@ -72,16 +72,11 @@ async def get_order(message: types.Message):
         f"📍 Адрес: {address}\n"
         f"💬 Комментарий: {comment}\n\n"
         f"{items_text}\n\n"
-        f"💰 <b>{total} сум</b>"
+        f"💰 <b>{total} сум</b>\n"
+        f"💳 Оплата: <b>{'CLICK' if payment == 'click' else 'Наличные'}</b>"
     )
 
-    # 👉 Админу (обязательно)
-    try:
-        await bot.send_message(ADMIN_ID, admin_message)
-    except Exception as e:
-        logging.error(f"Admin send error: {e}")
-
-    # 👉 Google Sheets (вторично)
+    # === GOOGLE SHEETS (ВСЕГДА) ===
     try:
         requests.post(
             GOOGLE_SCRIPT_URL,
@@ -93,7 +88,8 @@ async def get_order(message: types.Message):
                 "address": address,
                 "comment": comment,
                 "items": items_text,
-                "total": total
+                "total": total,
+                "payment": payment
             },
             timeout=10
         )
@@ -106,11 +102,43 @@ async def get_order(message: types.Message):
         "en": "✅ Order received! We will contact you shortly."
     }
 
-    await message.answer(replies.get(lang, replies["ru"]))
+    # === НАЛИЧНЫЕ ===
+    if payment == "cash":
+        try:
+            await bot.send_message(ADMIN_ID, admin_message)
+        except Exception as e:
+            logging.error(f"Admin send error: {e}")
+
+        await message.answer(replies.get(lang, replies["ru"]))
+        return
+
+    # === CLICK ===
+    if payment == "click":
+        pay_kb = InlineKeyboardMarkup()
+        pay_kb.add(
+            InlineKeyboardButton(
+                text="💳 Оплатить через CLICK (тест)",
+                url="https://t.me/CLICKtest"
+            )
+        )
+
+        await message.answer(
+            "💳 Для подтверждения заказа оплатите через CLICK:",
+            reply_markup=pay_kb
+        )
+
+        try:
+            await bot.send_message(
+                ADMIN_ID,
+                admin_message + "\n\n⏳ <b>ОЖИДАЕТ ОПЛАТЫ (CLICK)</b>"
+            )
+        except Exception as e:
+            logging.error(f"Admin send error: {e}")
 
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)
+
 
 
 
