@@ -2,9 +2,6 @@ import os
 import json
 import logging
 import requests
-import asyncio
-import uuid  # 🔴 ДОБАВЛЕНО
-
 from aiogram import Bot, Dispatcher, executor, types
 from aiohttp import web
 
@@ -14,15 +11,14 @@ ADMIN_ID = 6013591658
 
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSG6M86JhMZr34RI1ajn3xZhEJDXsbX44tiXGiW-YtXLGY9X2T59HBpHs2CrRuuy49/exec"
 
-CLICK_TEST_URL = "https://my.click.uz/services/pay"  # 🔴 TEST CLICK
-
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
 dp = Dispatcher(bot)
 
-
-# === /start ===
+# =====================================================
+# /start
+# =====================================================
 @dp.message_handler(commands=["start"])
 async def start(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -40,11 +36,16 @@ async def start(message: types.Message):
         reply_markup=keyboard
     )
 
-
-# === ПРИЁМ ЗАКАЗА ИЗ WEB APP ===
+# =====================================================
+# ПРИЁМ ЗАКАЗА ИЗ WEB APP
+# =====================================================
 @dp.message_handler(content_types=types.ContentType.WEB_APP_DATA)
 async def get_order(message: types.Message):
-    data = json.loads(message.web_app_data.data)
+    try:
+        data = json.loads(message.web_app_data.data)
+    except Exception as e:
+        logging.error(f"JSON error: {e}")
+        return
 
     order = data.get("order", {})
     phone = data.get("phone", "—")
@@ -53,14 +54,12 @@ async def get_order(message: types.Message):
     lang = data.get("lang", "ru")
     delivery = data.get("delivery", "—")
     address = data.get("address", "—")
-    payment = data.get("payment", "cash")
-
-    order_id = str(uuid.uuid4())[:8]  # 🔴 ORDER ID
+    payment = data.get("payment", "cash")  # cash / click
 
     payment_text = {
         "cash": "💵 Наличные",
         "click": "💳 CLICK"
-    }.get(payment)
+    }.get(payment, "—")
 
     user = message.from_user
     username = f"@{user.username}" if user.username else "—"
@@ -73,68 +72,71 @@ async def get_order(message: types.Message):
 
     admin_message = (
         "📥 <b>НОВЫЙ ЗАКАЗ</b>\n\n"
-        f"🆔 Заказ: <code>{order_id}</code>\n"
         f"👤 ID: <code>{user.id}</code>\n"
+        f"👤 Ник: {username}\n"
         f"📞 Телефон: {phone}\n"
-        f"💳 Оплата: <b>{payment_text}</b>\n\n"
+        f"🚚 Тип: {delivery}\n"
+        f"📍 Адрес: {address}\n"
+        f"💳 Оплата: <b>{payment_text}</b>\n"
+        f"💬 Комментарий: {comment}\n\n"
         f"{items_text}\n\n"
         f"💰 <b>{total} сум</b>"
     )
 
-    await bot.send_message(ADMIN_ID, admin_message)
+    # 👉 Админу
+    try:
+        await bot.send_message(ADMIN_ID, admin_message)
+    except Exception as e:
+        logging.error(f"Admin send error: {e}")
 
-    # === GOOGLE SHEETS ===
-    requests.post(
-        GOOGLE_SCRIPT_URL,
-        json={
-            "order_id": order_id,
-            "user_id": user.id,
-            "username": username,
-            "phone": phone,
-            "payment": payment_text,
-            "items": items_text,
-            "total": total
+    # 👉 Google Sheets
+    try:
+        requests.post(
+            GOOGLE_SCRIPT_URL,
+            json={
+                "user_id": user.id,
+                "username": username,
+                "phone": phone,
+                "delivery": delivery,
+                "address": address,
+                "payment": payment_text,
+                "comment": comment,
+                "items": items_text,
+                "total": total
+            },
+            timeout=10
+        )
+    except Exception as e:
+        logging.error(f"Google Sheets error: {e}")
+
+    replies = {
+        "ru": {
+            "cash": "✅ Заказ принят! Оплата наличными при получении.",
+            "click": "🕒 Заказ принят! Ожидаем оплату через CLICK."
         },
-        timeout=10
+        "uz": {
+            "cash": "✅ Buyurtma qabul qilindi! To‘lov naqd.",
+            "click": "🕒 CLICK orqali to‘lov kutilmoqda."
+        },
+        "en": {
+            "cash": "✅ Order received! Cash payment.",
+            "click": "🕒 CLICK payment pending."
+        }
+    }
+
+    await message.answer(
+        replies.get(lang, replies["ru"]).get(payment, "✅ Заказ принят!")
     )
 
-    # === CLICK PAYMENT LINK ===
-    if payment == "click":
-        click_link = (
-            f"{CLICK_TEST_URL}"
-            f"?service_id=TEST"
-            f"&merchant_trans_id={order_id}"
-            f"&amount={total}"
-        )
-
-        pay_keyboard = types.InlineKeyboardMarkup()
-        pay_keyboard.add(
-            types.InlineKeyboardButton(
-                text="💳 Оплатить через CLICK",
-                url=click_link
-            )
-        )
-
-        await message.answer(
-            "🧾 Заказ создан.\nНажмите кнопку ниже для оплаты:",
-            reply_markup=pay_keyboard
-        )
-    else:
-        await message.answer(
-            "✅ Заказ принят! Оплата наличными при получении."
-        )
-
-
 # =====================================================
-# 🔴 CALLBACK CLICKtest
+# CLICK TEST CALLBACK (ШАГ 5–6)
 # =====================================================
-
 async def click_callback(request):
     data = await request.json()
 
-    order_id = data.get("order_id")
-    status = data.get("status")
-    amount = data.get("amount")
+    order_id = data.get("order_id", "—")
+    status = data.get("status", "failed")
+    amount = data.get("amount", "0")
 
     if status == "success":
         text = (
@@ -151,9 +153,10 @@ async def click_callback(request):
     await bot.send_message(ADMIN_ID, text)
     return web.json_response({"ok": True})
 
-
-# === WEB SERVER ===
-async def start_web():
+# =====================================================
+# ЗАПУСК WEB CALLBACK СЕРВЕРА
+# =====================================================
+async def on_startup(dp):
     app = web.Application()
     app.router.add_post("/click/callback", click_callback)
 
@@ -162,14 +165,18 @@ async def start_web():
     site = web.TCPSite(runner, "0.0.0.0", 8080)
     await site.start()
 
+    logging.info("✅ CLICK callback server started on port 8080")
 
-async def main():
-    await start_web()
-    executor.start_polling(dp, skip_updates=True)
-
-
+# =====================================================
+# MAIN
+# =====================================================
 if __name__ == "__main__":
-    asyncio.run(main())
+    executor.start_polling(
+        dp,
+        skip_updates=True,
+        on_startup=on_startup
+    )
+
 
 
 
