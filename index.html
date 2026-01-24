@@ -14,10 +14,39 @@ body{
 }
 .header{
     padding:15px;
-    text-align:center;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+.logo-wrap{
+    display:flex;
+    align-items:center;
+    gap:10px;
 }
 .header img{
-    max-width:140px;
+    max-width:120px;
+}
+.header-title{
+    font-size:20px;
+    font-weight:bold;
+}
+.search-btn{
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    border:none;
+    background:#4a90e2;
+    color:#fff;
+    font-size:18px;
+}
+.search-input{
+    display:none;
+    margin:0 10px 10px;
+    padding:12px;
+    width:calc(100% - 20px);
+    border-radius:14px;
+    border:none;
+    font-size:14px;
 }
 .langs, .types, .categories{
     display:flex;
@@ -38,13 +67,16 @@ body{
     background:#4a90e2;
     color:#fff;
 }
-.input{
+.input, textarea{
     margin:10px;
     padding:12px;
     width:calc(100% - 20px);
     border-radius:14px;
     border:none;
     font-size:14px;
+}
+textarea{
+    resize:none;
 }
 .products{
     display:grid;
@@ -113,8 +145,14 @@ body{
 <body>
 
 <div class="header">
-    <img src="logo.png" alt="Radj Shashlik">
+    <div class="logo-wrap">
+        <img src="logo.png" alt="Radj Shashlik">
+        <div class="header-title">Radj Shashlik</div>
+    </div>
+    <button class="search-btn" onclick="toggleSearch()">🔍</button>
 </div>
+
+<input id="search" class="search-input" placeholder="🔎 Поиск блюд">
 
 <div class="langs">
     <button class="btn active" onclick="setLang('ru')">RU</button>
@@ -128,6 +166,8 @@ body{
 </div>
 
 <input id="address" class="input" placeholder="📍 Адрес доставки">
+<input id="phone" class="input" placeholder="📞 Телефон">
+<textarea id="comment" rows="3" placeholder="💬 Комментарий к заказу"></textarea>
 
 <div class="categories" id="cats"></div>
 <div class="products" id="products"></div>
@@ -140,18 +180,15 @@ body{
 <script>
 Telegram.WebApp.ready();
 
-let lang = 'ru';
-let category = 'salads';
-let type = 'delivery';
-let cart = {};
+let lang='ru', category='salads', type='delivery', cart={}, search='';
 
-const CATS = {
-ru:{salads:'🥗 Салаты', kebab:'🔥 Шашлык', national:'🍲 Национальные', grill:'🥩 На мангале', first:'🍜 Первые', drinks:'🥤 Напитки', bread:'🥖 Хлеб'},
-uz:{salads:'🥗 Salatlar', kebab:'🔥 Shashlik', national:'🍲 Milliy', grill:'🥩 Mangal', first:'🍜 Sho‘rva', drinks:'🥤 Ichimliklar', bread:'🥖 Non'},
-en:{salads:'🥗 Salads', kebab:'🔥 Kebab', national:'🍲 National', grill:'🥩 Grill', first:'🍜 Soups', drinks:'🥤 Drinks', bread:'🥖 Bread'}
+const CATS={
+ru:{salads:'🥗 Салаты',kebab:'🔥 Шашлык',national:'🍲 Национальные',grill:'🥩 На мангале',first:'🍜 Первые',drinks:'🥤 Напитки',bread:'🥖 Хлеб'},
+uz:{salads:'🥗 Salatlar',kebab:'🔥 Shashlik',national:'🍲 Milliy',grill:'🥩 Mangal',first:'🍜 Sho‘rva',drinks:'🥤 Ichimliklar',bread:'🥖 Non'},
+en:{salads:'🥗 Salads',kebab:'🔥 Kebab',national:'🍲 National',grill:'🥩 Grill',first:'🍜 Soups',drinks:'🥤 Drinks',bread:'🥖 Bread'}
 };
 
-const MENU = {
+const MENU={
 salads:[['Свежий',30000],['Ачичук',30000],['Шакароп',30000],['Цезарь',35000],['Хрустящий баклажан',45000]],
 kebab:[['Молотый',28000],['Кусковой баранина',30000],['Корейка',40000],['Куриное филе',22000]],
 national:[['Жиз Биз Баранина 1кг',260000],['Жиз Биз 0.5кг',130000]],
@@ -159,6 +196,17 @@ grill:[['Стейк куриный',100000],['Баранина с грибами
 first:[['Шурпа',35000],['Борщ',25000],['Мастава',25000]],
 drinks:[['Чай',5000],['Coca-Cola 1L',14000],['Fanta 1.5L',18000]],
 bread:[['Лепешка',10000]]
+};
+
+function toggleSearch(){
+    const s=document.getElementById('search');
+    s.style.display=s.style.display==='block'?'none':'block';
+    s.focus();
+}
+
+document.getElementById('search').oninput=e=>{
+    search=e.target.value.toLowerCase();
+    renderProducts();
 };
 
 function renderCats(){
@@ -176,80 +224,45 @@ function renderCats(){
 function renderProducts(){
     const p=document.getElementById('products');
     p.innerHTML='';
-    MENU[category].forEach(([name,price])=>{
+    MENU[category]
+    .filter(i=>i[0].toLowerCase().includes(search))
+    .forEach(([name,price])=>{
         cart[name]=cart[name]||0;
-        const d=document.createElement('div');
-        d.className='card';
-        d.innerHTML=`
-        <div class="img">Фото</div>
-        <div class="price">${price} сум</div>
-        <div class="name">${name}</div>
-        <div class="counter">
-            <button onclick="change('${name}',-1)">−</button>
-            <span>${cart[name]}</span>
-            <button onclick="change('${name}',1)">+</button>
+        p.innerHTML+=`
+        <div class="card">
+            <div class="img">Фото</div>
+            <div class="price">${price} сум</div>
+            <div class="name">${name}</div>
+            <div class="counter">
+                <button onclick="chg('${name}',-1)">−</button>
+                <span>${cart[name]}</span>
+                <button onclick="chg('${name}',1)">+</button>
+            </div>
         </div>`;
-        p.appendChild(d);
     });
 }
 
-function change(name,val){
-    cart[name]=Math.max(0,(cart[name]||0)+val);
-    renderProducts();
-    updateTotal();
-}
+function chg(n,v){cart[n]=Math.max(0,(cart[n]||0)+v);renderProducts();upd();}
+function upd(){let s=0;for(let k in cart)s+=cart[k]*price(k);total.innerText=s;}
+function price(n){for(let c in MENU)for(let i of MENU[c])if(i[0]==n)return i[1];}
 
-function updateTotal(){
-    let sum=0;
-    for(let k in cart) sum+=cart[k]*MENU_PRICE(k);
-    document.getElementById('total').innerText=sum;
-}
+function setLang(l){lang=l;document.querySelectorAll('.langs .btn').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');renderCats();renderProducts();}
+function setType(t){type=t;document.querySelectorAll('.types .btn').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');address.style.display=t==='pickup'?'none':'block';}
 
-function MENU_PRICE(name){
-    for(let cat in MENU){
-        for(let i of MENU[cat]) if(i[0]===name) return i[1];
-    }
-    return 0;
-}
-
-function setLang(l){
-    lang=l;
-    document.querySelectorAll('.langs .btn').forEach(b=>b.classList.remove('active'));
-    event.target.classList.add('active');
-    renderCats();
-    renderProducts();
-}
-
-function setType(t){
-    type=t;
-    document.querySelectorAll('.types .btn').forEach(b=>b.classList.remove('active'));
-    event.target.classList.add('active');
-    document.getElementById('address').style.display = t==='pickup'?'none':'block';
-}
-
-/* ✅ ВОТ ГЛАВНОЕ ИСПРАВЛЕНИЕ */
 function sendOrder(){
-    let order = {};
-    for(let k in cart){
-        if(cart[k] > 0) order[k] = cart[k];
-    }
-
-    const data = {
-        order: order,
-        total: document.getElementById('total').innerText,
-        lang: lang,
-        delivery: type === 'delivery' ? 'Доставка' : 'Самовывоз',
-        address: type === 'delivery'
-            ? document.getElementById('address').value
-            : '—'
-    };
-
-    Telegram.WebApp.sendData(JSON.stringify(data));
+    const order={};
+    for(let k in cart)if(cart[k]>0)order[k]=cart[k];
+    Telegram.WebApp.sendData(JSON.stringify({
+        order, lang, total:total.innerText,
+        phone:phone.value,
+        comment:comment.value,
+        delivery:type,
+        address:type==='delivery'?address.value:'—'
+    }));
     Telegram.WebApp.close();
 }
 
-renderCats();
-renderProducts();
+renderCats();renderProducts();
 </script>
 
 </body>
