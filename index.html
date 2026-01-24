@@ -15,8 +15,9 @@ body{
 .header{
     padding:15px;
     text-align:center;
-    font-size:22px;
-    font-weight:bold;
+}
+.header img{
+    max-width:140px;
 }
 .langs, .types, .categories{
     display:flex;
@@ -96,12 +97,24 @@ body{
     padding:12px;
     border-radius:16px;
 }
+.order-btn{
+    margin-top:10px;
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:14px;
+    background:#4a90e2;
+    color:#fff;
+    font-size:16px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="header">🍢 Radj Shashlik</div>
+<div class="header">
+    <img src="logo.png" alt="Radj Shashlik">
+</div>
 
 <div class="langs">
     <button class="btn active" onclick="setLang('ru')">RU</button>
@@ -114,21 +127,24 @@ body{
     <button class="btn" onclick="setType('pickup')">🏃 Самовывоз</button>
 </div>
 
-<input class="input" placeholder="📍 Адрес доставки">
+<input id="address" class="input" placeholder="📍 Адрес доставки">
 
 <div class="categories" id="cats"></div>
-
 <div class="products" id="products"></div>
 
 <div class="cart">
     <b>🛒 Корзина:</b> <span id="total">0</span> сум
+    <button class="order-btn" onclick="sendOrder()">Оформить заказ</button>
 </div>
 
 <script>
 Telegram.WebApp.ready();
 
+const ADMIN_ID = 6013591658; // ★ ТВОЙ ID
+
 let lang = 'ru';
 let category = 'salads';
+let type = 'delivery';
 let cart = {};
 
 const CATS = {
@@ -138,27 +154,13 @@ en:{salads:'🥗 Salads', kebab:'🔥 Kebab', national:'🍲 National', grill:'�
 };
 
 const MENU = {
-salads:[
-['Свежий',30000],['Ачичук',30000],['Шакароп',30000],['Цезарь',35000],['Хрустящий баклажан',45000]
-],
-kebab:[
-['Молотый',28000],['Кусковой баранина',30000],['Корейка',40000],['Куриное филе',22000]
-],
-national:[
-['Жиз Биз Баранина 1кг',260000],['Жиз Биз 0.5кг',130000]
-],
-grill:[
-['Стейк куриный',100000],['Баранина с грибами 1кг',200000]
-],
-first:[
-['Шурпа',35000],['Борщ',25000],['Мастава',25000]
-],
-drinks:[
-['Чай',5000],['Coca-Cola 1L',14000],['Fanta 1.5L',18000]
-],
-bread:[
-['Лепешка',10000]
-]
+salads:[['Свежий',30000],['Ачичук',30000],['Шакароп',30000],['Цезарь',35000],['Хрустящий баклажан',45000]],
+kebab:[['Молотый',28000],['Кусковой баранина',30000],['Корейка',40000],['Куриное филе',22000]],
+national:[['Жиз Биз Баранина 1кг',260000],['Жиз Биз 0.5кг',130000]],
+grill:[['Стейк куриный',100000],['Баранина с грибами 1кг',200000]],
+first:[['Шурпа',35000],['Борщ',25000],['Мастава',25000]],
+drinks:[['Чай',5000],['Coca-Cola 1L',14000],['Fanta 1.5L',18000]],
+bread:[['Лепешка',10000]]
 };
 
 function renderCats(){
@@ -177,6 +179,7 @@ function renderProducts(){
     const p=document.getElementById('products');
     p.innerHTML='';
     MENU[category].forEach(([name,price])=>{
+        cart[name]=cart[name]||0;
         const d=document.createElement('div');
         d.className='card';
         d.innerHTML=`
@@ -184,16 +187,31 @@ function renderProducts(){
         <div class="price">${price} сум</div>
         <div class="name">${name}</div>
         <div class="counter">
-            <button onclick="add('${name}',${price})">+</button>
+            <button onclick="change('${name}',${price},-1)">−</button>
+            <span>${cart[name]}</span>
+            <button onclick="change('${name}',${price},1)">+</button>
         </div>`;
         p.appendChild(d);
     });
 }
 
-function add(name,price){
-    cart[name]=(cart[name]||0)+price;
-    document.getElementById('total').innerText=
-        Object.values(cart).reduce((a,b)=>a+b,0);
+function change(name,price,val){
+    cart[name]=Math.max(0,(cart[name]||0)+val);
+    renderProducts();
+    updateTotal();
+}
+
+function updateTotal(){
+    let sum=0;
+    for(let k in cart) sum+=cart[k]*MENU_PRICE(k);
+    document.getElementById('total').innerText=sum;
+}
+
+function MENU_PRICE(name){
+    for(let cat in MENU){
+        for(let i of MENU[cat]) if(i[0]===name) return i[1];
+    }
+    return 0;
 }
 
 function setLang(l){
@@ -201,11 +219,24 @@ function setLang(l){
     document.querySelectorAll('.langs .btn').forEach(b=>b.classList.remove('active'));
     event.target.classList.add('active');
     renderCats();
+    renderProducts();
 }
 
 function setType(t){
+    type=t;
     document.querySelectorAll('.types .btn').forEach(b=>b.classList.remove('active'));
     event.target.classList.add('active');
+    document.getElementById('address').style.display = t==='pickup'?'none':'block';
+}
+
+function sendOrder(){
+    let text='🧾 Заказ:\n';
+    for(let k in cart) if(cart[k]>0) text+=`${k} x${cart[k]}\n`;
+    text+=`\nТип: ${type}`;
+    if(type==='delivery') text+=`\nАдрес: ${document.getElementById('address').value}`;
+
+    Telegram.WebApp.sendData(text);
+    alert('✅ Заказ принят');
 }
 
 renderCats();
