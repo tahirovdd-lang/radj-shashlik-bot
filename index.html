@@ -14,7 +14,7 @@ body{margin:0;font-family:Arial,sans-serif;background:#f2f4f7;}
 .header-title{font-size:20px;font-weight:bold;}
 .search-btn{width:36px;height:36px;border-radius:50%;border:none;background:#4a90e2;color:#fff;font-size:18px;}
 .search-input{display:none;margin:0 10px 10px;padding:12px;width:calc(100% - 20px);border-radius:14px;border:none;}
-.langs,.types,.categories{display:flex;gap:10px;padding:10px;overflow-x:auto;}
+.langs,.types,.categories,.payments{display:flex;gap:10px;padding:10px;overflow-x:auto;}
 .btn{padding:10px 14px;border-radius:14px;background:#fff;border:none;font-size:14px;}
 .btn.active{background:#4a90e2;color:#fff;}
 .input,textarea{margin:10px;padding:12px;width:calc(100% - 20px);border-radius:14px;border:none;font-size:14px;}
@@ -28,10 +28,6 @@ textarea{resize:none;}
 .counter button{width:30px;height:30px;border-radius:50%;border:none;font-size:18px;}
 .cart{background:#fff;margin:10px;padding:12px;border-radius:16px;}
 .order-btn{width:100%;padding:14px;margin-top:10px;border:none;border-radius:14px;background:#4a90e2;color:#fff;font-size:16px;}
-
-/* 🔹 ОПЛАТА */
-.payment{margin-top:12px;padding:10px;border-top:1px solid #eee;}
-.pay-option{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:14px;}
 </style>
 </head>
 
@@ -64,23 +60,15 @@ textarea{resize:none;}
 <div class="categories" id="cats"></div>
 <div class="products" id="products"></div>
 
+<!-- 🔴 PAYMENT BLOCK -->
+<div class="payments">
+    <button class="btn active" onclick="setPayment('cash')" id="payCash">💵 Наличные</button>
+    <button class="btn" onclick="setPayment('click')" id="payClick">💳 CLICK</button>
+</div>
+
 <div class="cart">
     <b id="cartTitle"></b>: <span id="total">0</span> сум
     <textarea id="comment" rows="3"></textarea>
-
-    <!-- 🔹 БЛОК ОПЛАТЫ -->
-    <div class="payment">
-        <b>💳 Способ оплаты</b>
-        <label class="pay-option">
-            <input type="radio" name="payment" value="cash" checked>
-            Наличные
-        </label>
-        <label class="pay-option">
-            <input type="radio" name="payment" value="click">
-            Онлайн (CLICK)
-        </label>
-    </div>
-
     <button class="order-btn" onclick="sendOrder()" id="orderBtn"></button>
 </div>
 
@@ -88,7 +76,7 @@ textarea{resize:none;}
 Telegram.WebApp.ready();
 
 let lang='ru',category='salads',type='delivery',cart={},searchValue='';
-let payment = 'cash'; // 🔹 ОПЛАТА
+let payment='cash'; // 🔴 PAYMENT
 
 const TEXT={
 ru:{delivery:'🚚 Доставка',pickup:'🏃 Самовывоз',address:'📍 Адрес доставки',phone:'📞 Телефон',cart:'🛒 Корзина',order:'Оформить заказ',comment:'💬 Комментарий к заказу',search:'🔎 Поиск блюд'},
@@ -112,11 +100,71 @@ drinks:[['Чай',5000],['Coca-Cola 1L',14000],['Fanta 1.5L',18000]],
 bread:[['Лепешка',10000]]
 };
 
-document.addEventListener('change', e=>{
-    if(e.target.name==='payment'){
-        payment = e.target.value;
+function applyLang(){
+    btnDelivery.innerText=TEXT[lang].delivery;
+    btnPickup.innerText=TEXT[lang].pickup;
+    address.placeholder=TEXT[lang].address;
+    phone.placeholder=TEXT[lang].phone;
+    cartTitle.innerText=TEXT[lang].cart;
+    orderBtn.innerText=TEXT[lang].order;
+    comment.placeholder=TEXT[lang].comment;
+    search.placeholder=TEXT[lang].search;
+    renderCats();renderProducts();
+}
+
+function setPayment(p){
+    payment=p;
+    document.getElementById('payCash').classList.remove('active');
+    document.getElementById('payClick').classList.remove('active');
+    (p==='cash'?payCash:payClick).classList.add('active');
+}
+
+function toggleSearch(){search.style.display=search.style.display==='block'?'none':'block';}
+search.oninput=e=>{searchValue=e.target.value.toLowerCase();renderProducts();};
+
+function renderCats(){
+    cats.innerHTML='';
+    for(let k in CATS[lang]){
+        cats.innerHTML+=`<button class="btn ${k===category?'active':''}" onclick="category='${k}';renderCats();renderProducts()">${CATS[lang][k]}</button>`;
     }
-});
+}
+
+function renderProducts(){
+    products.innerHTML='';
+    MENU[category].filter(i=>i[0].toLowerCase().includes(searchValue)).forEach(([n,p])=>{
+        cart[n]=cart[n]||0;
+        products.innerHTML+=`
+        <div class="card">
+            <div class="img">Фото</div>
+            <div class="price">${p} сум</div>
+            <div class="name">${n}</div>
+            <div class="counter">
+                <button onclick="chg('${n}',-1)">−</button>
+                <span>${cart[n]}</span>
+                <button onclick="chg('${n}',1)">+</button>
+            </div>
+        </div>`;
+    });
+    upd();
+}
+
+function chg(n,v){cart[n]=Math.max(0,(cart[n]||0)+v);renderProducts();}
+function upd(){let s=0;for(let k in cart)s+=cart[k]*price(k);total.innerText=s;}
+function price(n){for(let c in MENU)for(let i of MENU[c])if(i[0]==n)return i[1];}
+
+function setLang(l){
+    lang=l;
+    document.querySelectorAll('.langs .btn').forEach(b=>b.classList.remove('active'));
+    event.target.classList.add('active');
+    applyLang();
+}
+
+function setType(t){
+    type=t;
+    document.querySelectorAll('.types .btn').forEach(b=>b.classList.remove('active'));
+    event.target.classList.add('active');
+    address.style.display=t==='pickup'?'none':'block';
+}
 
 function sendOrder(){
     const order={};
@@ -124,15 +172,14 @@ function sendOrder(){
 
     Telegram.WebApp.sendData(JSON.stringify({
         order,
-        phone: phone.value || '—',
-        comment: comment.value || '—',
+        phone: phone.value||'—',
+        comment: comment.value||'—',
         delivery: type,
         address: type==='delivery'?address.value:'Самовывоз',
         total: total.innerText,
-        lang,
-        payment // 🔹 ВАЖНО
+        payment: payment, // 🔴 PAYMENT
+        lang
     }));
-
     Telegram.WebApp.close();
 }
 
@@ -141,6 +188,7 @@ applyLang();
 
 </body>
 </html>
+
 
 
 
