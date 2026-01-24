@@ -37,30 +37,24 @@ input,select{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px
 
 <body>
 
-<h2 id="title">🍽 Radj Shashlik</h2>
+<h2>🍽 Radj Shashlik</h2>
 
-<!-- 🌐 ЯЗЫК -->
 <div style="text-align:center">
   <button class="lang-btn active" onclick="setLang('ru',this)">🇷🇺 RU</button>
   <button class="lang-btn" onclick="setLang('uz',this)">🇺🇿 UZ</button>
   <button class="lang-btn" onclick="setLang('en',this)">🇬🇧 EN</button>
 </div>
 
-<!-- КАТЕГОРИИ -->
-<div style="text-align:center;margin-top:10px" id="categories"></div>
-
-<!-- МЕНЮ -->
+<div id="categories" style="text-align:center;margin-top:10px"></div>
 <div id="menu"></div>
 
-<!-- КОРЗИНА -->
 <div class="cart">
 <h3 id="cart-title">🛒 Корзина</h3>
 <div id="cart-items">Корзина пуста</div>
 <div class="total">💰 <span id="total-label">Итого</span>: <span id="total">0</span> сум</div>
 </div>
 
-<!-- ДОСТАВКА -->
-<select id="delivery" onchange="toggleAddress()">
+<select id="delivery">
   <option value="delivery">🚚 Доставка</option>
   <option value="pickup">🏃 Самовывоз</option>
 </select>
@@ -68,133 +62,95 @@ input,select{width:100%;padding:10px;margin-top:8px;border-radius:6px;border:1px
 <input type="text" id="address" placeholder="📍 Адрес доставки">
 <input type="tel" id="phone" placeholder="📱 Телефон">
 
-<button class="order-btn" id="order-btn" onclick="sendOrder()">✅ Оформить заказ</button>
+<button class="order-btn" id="order-btn">✅ Оформить заказ</button>
 
 <script>
-Telegram.WebApp.ready();
+document.addEventListener("DOMContentLoaded", () => {
 
-let lang='ru';
-let currentCategory='Шашлык';
-const cart={};
+  const tg = Telegram.WebApp;
+  tg.ready();
+  tg.expand();
 
-const texts={
- ru:{
-  cart:"🛒 Корзина", empty:"Корзина пуста",
-  total:"Итого", order:"✅ Оформить заказ"
- },
- uz:{
-  cart:"🛒 Savat", empty:"Savat bo‘sh",
-  total:"Jami", order:"✅ Buyurtma berish"
- },
- en:{
-  cart:"🛒 Cart", empty:"Cart is empty",
-  total:"Total", order:"✅ Place order"
- }
-};
+  const delivery = document.getElementById("delivery");
+  const address = document.getElementById("address");
+  const phone = document.getElementById("phone");
 
-const menuData={
- "Шашлык":[["Шашлык куриный",45000],["Шашлык говяжий",60000]],
- "Первые блюда":[["Шурпа",35000]],
- "Национальные блюда":[["Плов",50000]],
- "Салаты":[["Оливье",30000]],
- "Напитки":[["Кола 1л",15000]],
- "Хлеб":[["Лепёшка",5000]]
-};
+  let lang = "ru";
+  let currentCategory = "Шашлык";
+  const cart = {};
 
-function setLang(l,btn){
- lang=l;
- document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
- btn.classList.add('active');
- document.getElementById('cart-title').innerText=texts[lang].cart;
- document.getElementById('total-label').innerText=texts[lang].total;
- document.getElementById('order-btn').innerText=texts[lang].order;
- renderCart();
-}
+  const texts = {
+    ru:{cart:"🛒 Корзина",empty:"Корзина пуста",total:"Итого",order:"✅ Оформить заказ"},
+    uz:{cart:"🛒 Savat",empty:"Savat bo‘sh",total:"Jami",order:"✅ Buyurtma berish"},
+    en:{cart:"🛒 Cart",empty:"Cart is empty",total:"Total",order:"✅ Place order"}
+  };
 
-function renderCategories(){
- const div=document.getElementById("categories");
- div.innerHTML="";
- for(let c in menuData){
-  div.innerHTML+=`<button class="category-btn ${c===currentCategory?'active':''}" onclick="selectCategory('${c}',this)">${c}</button>`;
- }
-}
+  const menuData = {
+    "Шашлык":[["Шашлык куриный",45000],["Шашлык говяжий",60000]],
+    "Первые блюда":[["Шурпа",35000]],
+    "Национальные блюда":[["Плов",50000]],
+    "Салаты":[["Оливье",30000]],
+    "Напитки":[["Кола 1л",15000]],
+    "Хлеб":[["Лепёшка",5000]]
+  };
 
-function selectCategory(cat,btn){
- currentCategory=cat;
- document.querySelectorAll('.category-btn').forEach(b=>b.classList.remove('active'));
- btn.classList.add('active');
- renderMenu();
-}
+  window.setLang = (l,btn)=>{
+    lang=l;
+    document.querySelectorAll(".lang-btn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("cart-title").innerText=texts[lang].cart;
+    document.getElementById("total-label").innerText=texts[lang].total;
+    document.getElementById("order-btn").innerText=texts[lang].order;
+    renderCart();
+  };
 
-function renderMenu(){
- const menu=document.getElementById("menu");
- menu.innerHTML="";
- menuData[currentCategory].forEach(i=>{
-  cart[i[0]]=cart[i[0]]||0;
-  menu.innerHTML+=`
-   <div class="card">
-    <div class="title">${i[0]}</div>
-    <div class="price">${i[1]} сум</div>
-    <div class="controls">
-     <button class="minus" onclick="change('${i[0]}',-1)">−</button>
-     <span>${cart[i[0]]}</span>
-     <button class="plus" onclick="change('${i[0]}',1)">+</button>
-    </div>
-   </div>`;
- });
-}
-
-function change(n,d){
- cart[n]+=d;
- if(cart[n]<0)cart[n]=0;
- renderMenu();
- renderCart();
-}
-
-function renderCart(){
- const div=document.getElementById("cart-items");
- div.innerHTML="";
- let total=0,empty=true;
- for(let i in cart){
-  if(cart[i]>0){
-   empty=false;
-   const p=findPrice(i);
-   total+=cart[i]*p;
-   div.innerHTML+=`<div class="cart-item"><span>${i} × ${cart[i]}</span><span>${cart[i]*p} сум</span></div>`;
+  function renderCategories(){
+    const div=document.getElementById("categories");
+    div.innerHTML="";
+    Object.keys(menuData).forEach(c=>{
+      div.innerHTML+=`<button class="category-btn ${c===currentCategory?'active':''}" onclick="selectCategory('${c}',this)">${c}</button>`;
+    });
   }
- }
- if(empty)div.innerText=texts[lang].empty;
- document.getElementById("total").innerText=total;
-}
 
-function findPrice(n){
- for(let c in menuData)for(let i of menuData[c])if(i[0]==n)return i[1];
- return 0;
-}
+  window.selectCategory=(c,btn)=>{
+    currentCategory=c;
+    document.querySelectorAll(".category-btn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    renderMenu();
+  };
 
-function toggleAddress(){
- address.style.display=delivery.value==="delivery"?"block":"none";
-}
+  function renderMenu(){
+    const menu=document.getElementById("menu");
+    menu.innerHTML="";
+    menuData[currentCategory].forEach(i=>{
+      cart[i[0]]=cart[i[0]]||0;
+      menu.innerHTML+=`
+      <div class="card">
+        <div class="title">${i[0]}</div>
+        <div class="price">${i[1]} сум</div>
+        <div class="controls">
+          <button class="minus" onclick="change('${i[0]}',-1)">−</button>
+          <span>${cart[i[0]]}</span>
+          <button class="plus" onclick="change('${i[0]}',1)">+</button>
+        </div>
+      </div>`;
+    });
+  }
 
-function sendOrder(){
- const phone=document.getElementById("phone").value.trim();
- if(!phone)return alert("Введите телефон");
- Telegram.WebApp.sendData(JSON.stringify({
-  order:cart,
-  total:Number(document.getElementById("total").innerText),
-  phone,
-  delivery:delivery.value,
-  address:address.value
- }));
- Telegram.WebApp.close();
-}
+  window.change=(n,d)=>{
+    cart[n]+=d;
+    if(cart[n]<0)cart[n]=0;
+    renderMenu();
+    renderCart();
+  };
 
-renderCategories();
-renderMenu();
-</script>
+  function renderCart(){
+    const div=document.getElementById("cart-items");
+    div.innerHTML="";
+    let total=0,empty=true;
+    for(let i in cart){
+      if(cart[i]>0){
 
-</body>
-</html>
 
 
 
