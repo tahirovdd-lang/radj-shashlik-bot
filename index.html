@@ -3,180 +3,210 @@
 <head>
 <meta charset="UTF-8">
 <title>Radj Shashlik</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 *{box-sizing:border-box}
-body{font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:10px 10px 90px}
-.logo-container{display:flex;justify-content:center;margin-top:5px}
-.logo{width:90px;border-radius:14px}
-h2,h3{text-align:center;margin:8px 0}
-.lang-wrap{display:flex;justify-content:center;gap:8px;margin:10px 0}
-.lang-btn{padding:8px 14px;border:none;border-radius:20px;background:#e0e0e0;font-weight:bold}
-.lang-btn.active{background:#0088cc;color:#fff}
-#categories{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px}
-.category-btn{padding:8px 14px;border:none;border-radius:20px;background:#eee;font-size:14px}
-.category-btn.active{background:#0088cc;color:#fff}
-.card{background:#fff;border-radius:14px;padding:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
-.price{color:#2ecc71;font-weight:bold}
-.controls{display:flex;align-items:center;gap:8px}
-.controls button{width:36px;height:36px;border:none;border-radius:50%;font-size:20px}
-.plus{background:#4CAF50;color:#fff}
-.minus{background:#ddd}
-.cart{background:#fff;border-radius:14px;padding:14px;margin-top:10px}
+body{
+  margin:0;
+  padding:10px 10px 110px;
+  font-family:Arial,sans-serif;
+  background:#f4f4f4;
+}
+.logo{display:block;margin:5px auto;width:90px;border-radius:14px}
+h2{text-align:center;margin:8px 0}
+
+.langs, .types, .categories{
+  display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px
+}
+button{
+  border:none;padding:8px 14px;border-radius:20px;font-weight:bold
+}
+.active{background:#0088cc;color:#fff}
+.gray{background:#e0e0e0}
+
+.card{
+  background:#fff;border-radius:14px;padding:12px;margin-bottom:10px;
+  display:flex;justify-content:space-between;align-items:center
+}
+.price{color:#27ae60;font-weight:bold}
+.ctrl{display:flex;gap:8px;align-items:center}
+.ctrl button{width:34px;height:34px;border-radius:50%;font-size:18px}
+
+.cart{
+  background:#fff;border-radius:14px;padding:12px;margin-top:10px
+}
 .cart-item{display:flex;justify-content:space-between;margin:4px 0}
-input,select{width:100%;padding:12px;margin-top:10px;border-radius:10px;border:1px solid #ccc;font-size:16px}
-button.order-btn{width:100%;padding:14px;border:none;border-radius:14px;background:#0088cc;color:#fff;font-size:18px;margin-top:10px}
+
+input,textarea{
+  width:100%;padding:10px;margin-top:8px;
+  border-radius:10px;border:1px solid #ccc;font-size:16px
+}
 </style>
 </head>
 
 <body>
-<div class="logo-container">
-  <img src="logo.png" class="logo">
-</div>
 
+<img src="logo.png" class="logo">
 <h2>🍽 Radj Shashlik</h2>
 
-<div class="lang-wrap">
-  <button class="lang-btn active" onclick="setLang('ru',this)">🇷🇺 RU</button>
-  <button class="lang-btn" onclick="setLang('uz',this)">🇺🇿 UZ</button>
-  <button class="lang-btn" onclick="setLang('en',this)">🇬🇧 EN</button>
+<div class="langs">
+  <button class="active" onclick="setLang('ru',this)">RU</button>
+  <button class="gray" onclick="setLang('uz',this)">UZ</button>
+  <button class="gray" onclick="setLang('en',this)">EN</button>
 </div>
 
-<div id="categories"></div>
+<div class="types">
+  <button class="active" onclick="setType('delivery',this)">🚚 Доставка</button>
+  <button class="gray" onclick="setType('pickup',this)">🏃 Самовывоз</button>
+</div>
+
+<input id="address" placeholder="📍 Адрес доставки">
+
+<div class="categories" id="categories"></div>
 <div id="menu"></div>
 
 <div class="cart">
-  <h3 id="cart-title">🛒 Корзина</h3>
-  <div id="cart-items">Корзина пуста</div>
-  <div><b id="total-label">Итого:</b> <span id="total">0</span> сум</div>
+  <b id="cartTitle">Корзина</b>
+  <div id="cartItems">Корзина пуста</div>
+  <div><b>Итого:</b> <span id="total">0</span> сум</div>
 </div>
-
-<select id="delivery">
-  <option value="Доставка">🚚 Доставка</option>
-  <option value="Самовывоз">🏃‍♂️ Самовывоз</option>
-</select>
 
 <input id="phone" placeholder="📱 Телефон">
 
-<button class="order-btn" onclick="sendOrder()">Оформить заказ</button>
-
 <script>
 const tg = Telegram.WebApp;
-tg.ready();
-tg.expand();
+tg.ready(); tg.expand();
 
-let lang="ru";
-let currentCategory="Шашлык";
+let lang='ru', type='delivery', category='';
 const cart={};
 
-const texts={
-  ru:{cart:"Корзина",empty:"Корзина пуста",total:"Итого",btn:"Оформить заказ"},
-  uz:{cart:"Savat",empty:"Savat bo‘sh",total:"Jami",btn:"Buyurtma berish"},
-  en:{cart:"Cart",empty:"Cart is empty",total:"Total",btn:"Place order"}
+const catNames={
+  salads:{ru:'Салаты',uz:'Salatlar',en:'Salads'},
+  grill:{ru:'Шашлык',uz:'Shashlik',en:'Grill'},
+  national:{ru:'Национальные блюда',uz:'Milliy taomlar',en:'National'},
+  mangal:{ru:'Блюда на мангале',uz:'Mangal taomlari',en:'Grill plates'},
+  soups:{ru:'Первые блюда',uz:'Sho‘rvalar',en:'Soups'},
+  drinks:{ru:'Напитки',uz:'Ichimliklar',en:'Drinks'},
+  bread:{ru:'Хлеб',uz:'Non',en:'Bread'}
 };
 
-const menuData={
-  "Шашлык":[["Шашлык куриный",45000],["Шашлык говяжий",60000]],
-  "Первые блюда":[["Шурпа",35000]],
-  "Национальные блюда":[["Плов",50000]],
-  "Салаты":[["Оливье",30000]],
-  "Напитки":[["Кола 1л",15000]],
-  "Хлеб":[["Лепёшка",5000]]
+const menu={
+  salads:[
+    ['Свежий',30000],['Ачичук',30000],['Шакароп',30000],['Цезарь',35000]
+  ],
+  grill:[
+    ['Молотый',28000],['Корейка',40000],['Куриное филе',22000]
+  ],
+  national:[
+    ['Жиз Биз 1кг',260000],['Жиз Биз 0.5кг',130000]
+  ],
+  mangal:[
+    ['Стейк Куринный',100000],['Стейк Тибон',20000]
+  ],
+  soups:[
+    ['Шурпа',35000],['Борщ',25000]
+  ],
+  drinks:[
+    ['Coca Cola 1L',14000],['Чай',5000]
+  ],
+  bread:[
+    ['Лепешка',10000]
+  ]
 };
 
 function setLang(l,btn){
   lang=l;
-  document.querySelectorAll(".lang-btn").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  renderAll();
+  document.querySelectorAll('.langs button').forEach(b=>b.className='gray');
+  btn.className='active';
+  render();
 }
 
-function renderCategories(){
-  const div=document.getElementById("categories");
-  div.innerHTML="";
-  for(let c in menuData){
-    const b=document.createElement("button");
-    b.className="category-btn"+(c===currentCategory?" active":"");
-    b.innerText=c;
-    b.onclick=()=>{currentCategory=c;renderCategories();renderMenu();};
-    div.appendChild(b);
+function setType(t,btn){
+  type=t;
+  document.querySelectorAll('.types button').forEach(b=>b.className='gray');
+  btn.className='active';
+  document.getElementById('address').style.display =
+    t==='delivery'?'block':'none';
+}
+
+function renderCats(){
+  const c=document.getElementById('categories');
+  c.innerHTML='';
+  for(let k in catNames){
+    const b=document.createElement('button');
+    b.className=k===category?'active':'gray';
+    b.innerText=catNames[k][lang];
+    b.onclick=()=>{category=k;renderMenu();renderCats()};
+    c.appendChild(b);
   }
 }
 
 function renderMenu(){
-  const menu=document.getElementById("menu");
-  menu.innerHTML="";
-  menuData[currentCategory].forEach(([n,p])=>{
-    if(!cart[n]) cart[n]=0;
-    menu.innerHTML+=`
-      <div class="card">
-        <div><b>${n}</b><div class="price">${p} сум</div></div>
-        <div class="controls">
-          <button class="minus" onclick="change('${n}',-1)">−</button>
-          <span>${cart[n]}</span>
-          <button class="plus" onclick="change('${n}',1)">+</button>
-        </div>
-      </div>`;
+  const m=document.getElementById('menu');
+  m.innerHTML='';
+  if(!category) return;
+  menu[category].forEach(([n,p])=>{
+    cart[n]=cart[n]||0;
+    m.innerHTML+=`
+    <div class="card">
+      <div><b>${n}</b><div class="price">${p} сум</div></div>
+      <div class="ctrl">
+        <button onclick="chg('${n}',-1)">−</button>
+        <span>${cart[n]}</span>
+        <button onclick="chg('${n}',1)">+</button>
+      </div>
+    </div>`;
   });
 }
 
-function change(n,d){
+function chg(n,d){
   cart[n]=Math.max(0,cart[n]+d);
-  renderMenu();
-  renderCart();
+  renderMenu(); renderCart();
 }
 
 function renderCart(){
-  const div=document.getElementById("cart-items");
-  div.innerHTML="";
-  let total=0,has=false;
-
+  let t=0,html='';
   for(let i in cart){
     if(cart[i]>0){
-      has=true;
-      const p=findPrice(i);
-      total+=cart[i]*p;
-      div.innerHTML+=`<div class="cart-item"><span>${i} × ${cart[i]}</span><span>${cart[i]*p} сум</span></div>`;
+      t+=cart[i]*findPrice(i);
+      html+=`<div class="cart-item"><span>${i}×${cart[i]}</span><span>${cart[i]*findPrice(i)}</span></div>`;
     }
   }
-  if(!has) div.innerText=texts[lang].empty;
-  document.getElementById("total").innerText=total;
+  document.getElementById('cartItems').innerHTML=html||'Корзина пуста';
+  document.getElementById('total').innerText=t;
+
+  if(t>0){
+    tg.MainButton.setText('Оформить заказ • '+t+' сум');
+    tg.MainButton.show();
+  }else tg.MainButton.hide();
 }
 
 function findPrice(n){
-  for(let c in menuData)
-    for(let i of menuData[c])
+  for(let k in menu)
+    for(let i of menu[k])
       if(i[0]==n) return i[1];
   return 0;
 }
 
-function sendOrder(){
-  const phone=document.getElementById("phone").value.trim();
-  if(!phone){alert("Введите телефон"); return;}
-  const delivery=document.getElementById("delivery").value;
-
+tg.MainButton.onClick(()=>{
   tg.sendData(JSON.stringify({
     order:cart,
-    total:document.getElementById("total").innerText,
-    phone:phone,
+    phone:document.getElementById('phone').value,
+    delivery:type,
+    address:document.getElementById('address').value,
     lang:lang,
-    delivery:delivery
+    total:document.getElementById('total').innerText
   }));
+  tg.showPopup({title:'Заказ принят',message:'Мы получили ваш заказ 👍',buttons:[{type:'ok'}]});
+});
 
-  alert("✅ Заказ принят! Мы получили ваш заказ 👍");
+function render(){
+  renderCats(); renderMenu(); renderCart();
 }
 
-function renderAll(){
-  document.getElementById("cart-title").innerText=texts[lang].cart;
-  document.getElementById("total-label").innerText=texts[lang].total;
-  renderCategories();
-  renderMenu();
-  renderCart();
-}
-
-renderAll();
+render();
 </script>
 </body>
 </html>
