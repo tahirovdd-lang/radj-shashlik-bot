@@ -6,21 +6,38 @@ import uuid
 from aiogram import Bot, Dispatcher, executor, types
 from aiohttp import web
 
-# === НАСТРОЙКИ ===
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+# =====================================================
+# 🔐 НАСТРОЙКИ ТОКЕНА (FIX ДЛЯ BOTHOST)
+# =====================================================
+BOT_TOKEN = (
+    os.getenv("TELEGRAM_BOT_TOKEN")
+    or os.getenv("BOT_TOKEN")
+    or os.getenv("API_TOKEN")
+    or os.getenv("BOT_API_TOKEN")
+    or os.getenv("TOKEN")
+)
+
+if not BOT_TOKEN:
+    raise RuntimeError("❌ BOT TOKEN NOT FOUND IN ENV VARIABLES")
+
 ADMIN_ID = 6013591658
 
+# =====================================================
+# ВНЕШНИЕ СЕРВИСЫ
+# =====================================================
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSG6M86JhMZr34RI1ajn3xZhEJDXsbX44tiXGiW-YtXLGY9X2T59HBpHs2CrRuuy49/exec"
 
-CLICK_TEST_URL = "https://my.click.uz/services/pay"  # CLICKtest
-CLICK_SERVICE_ID = "99999"  # тестовый service_id
-CLICK_MERCHANT_ID = "99999"  # тестовый merchant_id
-CALLBACK_URL = "https://YOUR_DOMAIN/click/callback"  # ❗ поменяешь на боевой
+CLICK_TEST_URL = "https://my.click.uz/services/pay"
+CLICK_SERVICE_ID = "99999"
+CLICK_MERCHANT_ID = "99999"
+CALLBACK_URL = "https://YOUR_DOMAIN/click/callback"
 
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
 dp = Dispatcher(bot)
+
+logging.info("✅ BOT STARTED SUCCESSFULLY")
 
 # =====================================================
 # /start
@@ -58,7 +75,7 @@ async def get_order(message: types.Message):
     address = data.get("address", "—")
     payment = data.get("payment", "cash")
 
-    order_id = str(uuid.uuid4())[:8]  # 🔹 ШАГ 4
+    order_id = str(uuid.uuid4())[:8]
 
     payment_text = {
         "cash": "💵 Наличные",
@@ -82,7 +99,7 @@ async def get_order(message: types.Message):
         f"📞 Телефон: {phone}\n"
         f"🚚 Тип: {delivery}\n"
         f"📍 Адрес: {address}\n"
-        f"💳 Оплата: <b>{payment_text}</b>\n"
+        f"💳 Оплата: <b>{payment_text}</b>\n\n"
         f"{items_text}\n\n"
         f"💰 <b>{total} сум</b>"
     )
@@ -103,7 +120,7 @@ async def get_order(message: types.Message):
     )
 
     # =====================================================
-    # 🔹 ШАГ 5 — КНОПКА ОПЛАТЫ CLICK
+    # КНОПКА CLICK
     # =====================================================
     if payment == "click":
         click_url = (
@@ -131,7 +148,7 @@ async def get_order(message: types.Message):
         await message.answer("✅ Заказ принят! Оплата наличными при получении.")
 
 # =====================================================
-# 🔹 ШАГ 6–7 — CALLBACK ОТ CLICKtest
+# CALLBACK CLICK
 # =====================================================
 async def click_callback(request):
     data = await request.post()
@@ -178,6 +195,7 @@ if __name__ == "__main__":
         skip_updates=True,
         on_startup=on_startup
     )
+
 
 
 
