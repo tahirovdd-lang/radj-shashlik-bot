@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-<!-- 🔤 Новый шрифт -->
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
 
 <style>
@@ -16,7 +15,6 @@
     --bg:#f2f4f7;
 }
 
-/* BASE */
 body{
     margin:0;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
@@ -40,7 +38,6 @@ body{
     font-family:'Montserrat',sans-serif;
     font-size:30px;
     font-weight:900;
-    letter-spacing:.4px;
 }
 .search-btn{
     width:38px;height:38px;
@@ -62,15 +59,13 @@ body{
     box-shadow:0 6px 20px rgba(0,0,0,.08);
 }
 
-/* BUTTON GROUPS */
+/* BUTTONS */
 .langs,.types,.categories,.payments{
     display:flex;
     gap:10px;
     padding:10px;
     overflow-x:auto;
 }
-
-/* BUTTON */
 .btn{
     padding:10px 18px;
     border-radius:22px;
@@ -78,21 +73,11 @@ body{
     border:1px solid #e1e5ea;
     font-size:14px;
     font-weight:600;
-    transition:.25s;
-    box-shadow:0 3px 8px rgba(0,0,0,.05);
 }
 .btn.active{
     background:linear-gradient(135deg,#4a90e2,#6fb1ff);
     color:#fff;
     border:none;
-    box-shadow:0 8px 20px rgba(74,144,226,.45);
-}
-
-/* PAYMENTS */
-.payments .btn{flex:1;font-size:15px;}
-#payClick.active{
-    background:linear-gradient(135deg,#00c853,#64dd17);
-    box-shadow:0 10px 24px rgba(0,200,83,.45);
 }
 
 /* INPUTS */
@@ -104,7 +89,6 @@ body{
     border:none;
     font-size:14px;
     background:#fff;
-    box-shadow:0 6px 18px rgba(0,0,0,.08);
 }
 textarea{resize:none;}
 
@@ -125,12 +109,14 @@ textarea{resize:none;}
 .img{
     height:110px;
     border-radius:16px;
-    background:linear-gradient(135deg,#eceff4,#dde3ea);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:#9aa0a6;
-    font-weight:600;
+    background:#f0f2f5;
+    overflow:hidden;
+}
+.img img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
 }
 .price{margin-top:8px;font-weight:800;color:var(--green);}
 .name{font-size:14px;margin-top:6px;}
@@ -142,22 +128,12 @@ textarea{resize:none;}
     gap:12px;
     margin-top:8px;
 }
-.counter span{
-    min-width:22px;
-    font-weight:800;
-    font-size:16px;
-}
+.counter span{font-weight:800;}
 .counter button{
     width:32px;height:32px;
     border-radius:50%;
     border:none;
     font-size:18px;
-    background:#eef1f4;
-    transition:.15s;
-}
-.counter button:active{
-    transform:scale(.85);
-    background:#dbe2ea;
 }
 
 /* CART */
@@ -166,7 +142,6 @@ textarea{resize:none;}
     margin:12px;
     padding:16px;
     border-radius:22px;
-    box-shadow:0 12px 30px rgba(0,0,0,.1);
 }
 .order-btn{
     width:100%;
@@ -180,7 +155,6 @@ textarea{resize:none;}
     font-weight:800;
 }
 </style>
-
 </head>
 
 <body>
@@ -243,7 +217,13 @@ en:{salads:'🥗 Salads',kebab:'🔥 Kebab',national:'🍲 National dishes',gril
 };
 
 const MENU={
-salads:[['Свежий',30000,'images/svejiy.jpg'],['Ачичук',30000],['Шакароп',30000],['Цезарь',35000],['Хрустящий баклажан',45000]],
+salads:[
+    ['Свежий',30000,'images/svejiy.jpg'],
+    ['Ачичук',30000],
+    ['Шакароп',30000],
+    ['Цезарь',35000],
+    ['Хрустящий баклажан',45000]
+],
 kebab:[['Молотый',28000],['Кусковой баранина',30000],['Корейка',40000],['Куриное филе',22000]],
 national:[['Жиз Биз 1кг',260000],['Жиз Биз 0.5кг',130000]],
 grill:[['Стейк куриный',100000],['Баранина с грибами 1кг',200000]],
@@ -251,6 +231,47 @@ first:[['Шурпа',35000],['Борщ',25000],['Мастава',25000]],
 drinks:[['Чай',5000],['Coca-Cola 1L',14000],['Fanta 1.5L',18000],['Лимонад Тархун 0.5L',12000]],
 bread:[['Лепешка',10000]]
 };
+
+function renderProducts(){
+    products.innerHTML='';
+    MENU[category]
+    .filter(i=>i[0].toLowerCase().includes(searchValue))
+    .forEach(([n,p,img])=>{
+        cart[n]=cart[n]||0;
+        products.innerHTML+=`
+        <div class="card">
+            <div class="img">
+                <img src="${img || 'logo.png'}">
+            </div>
+            <div class="price">${p} сум</div>
+            <div class="name">${n}</div>
+            <div class="counter">
+                <button onclick="chg('${n}',-1,this)">−</button>
+                <span id="c_${n}">${cart[n]}</span>
+                <button onclick="chg('${n}',1,this)">+</button>
+            </div>
+        </div>`;
+    });
+    upd();
+}
+
+function toggleSearch(){search.style.display=search.style.display==='block'?'none':'block';}
+search.oninput=e=>{searchValue=e.target.value.toLowerCase();renderProducts();};
+
+function renderCats(){
+    cats.innerHTML='';
+    for(let k in CATS[lang]){
+        cats.innerHTML+=`<button class="btn ${k===category?'active':''}" onclick="category='${k}';renderCats();renderProducts()">${CATS[lang][k]}</button>`;
+    }
+}
+
+function chg(n,v){
+    cart[n]=Math.max(0,(cart[n]||0)+v);
+    document.getElementById('c_'+n).innerText=cart[n];
+    upd();
+}
+function upd(){let s=0;for(let k in cart)s+=cart[k]*price(k);total.innerText=s;}
+function price(n){for(let c in MENU)for(let i of MENU[c])if(i[0]==n)return i[1];}
 
 function applyLang(){
     btnDelivery.innerText=TEXT[lang].delivery;
@@ -264,53 +285,6 @@ function applyLang(){
     renderCats();renderProducts();
 }
 
-function setPayment(p){
-    payment=p;
-    payCash.classList.toggle('active',p==='cash');
-    payClick.classList.toggle('active',p==='click');
-}
-
-function toggleSearch(){search.style.display=search.style.display==='block'?'none':'block';}
-search.oninput=e=>{searchValue=e.target.value.toLowerCase();renderProducts();};
-
-function renderCats(){
-    cats.innerHTML='';
-    for(let k in CATS[lang]){
-        cats.innerHTML+=`<button class="btn ${k===category?'active':''}" onclick="category='${k}';renderCats();renderProducts()">${CATS[lang][k]}</button>`;
-    }
-}
-
-function renderProducts(){
-    products.innerHTML='';
-    MENU[category].filter(i=>i[0].toLowerCase().includes(searchValue)).forEach(([n,p])=>{
-        cart[n]=cart[n]||0;
-        products.innerHTML+=`
-        <div class="card">
-            <div class="img">Фото</div>
-            <div class="price">${p} сум</div>
-            <div class="name">${n}</div>
-            <div class="counter">
-                <button onclick="chg('${n}',-1,this)">−</button>
-                <span id="c_${n}">${cart[n]}</span>
-                <button onclick="chg('${n}',1,this)">+</button>
-            </div>
-        </div>`;
-    });
-    upd();
-}
-
-function chg(n,v,btn){
-    cart[n]=Math.max(0,(cart[n]||0)+v);
-    const el=document.getElementById('c_'+n);
-    if(el) el.innerText=cart[n];
-    btn.style.transform='scale(.85)';
-    setTimeout(()=>btn.style.transform='',120);
-    upd();
-}
-
-function upd(){let s=0;for(let k in cart)s+=cart[k]*price(k);total.innerText=s;}
-function price(n){for(let c in MENU)for(let i of MENU[c])if(i[0]==n)return i[1];}
-
 function setLang(l,b){
     lang=l;
     document.querySelectorAll('.langs .btn').forEach(x=>x.classList.remove('active'));
@@ -323,20 +297,16 @@ function setType(t,b){
     b.classList.add('active');
     address.style.display=t==='pickup'?'none':'block';
 }
+function setPayment(p){
+    payment=p;
+    payCash.classList.toggle('active',p==='cash');
+    payClick.classList.toggle('active',p==='click');
+}
 
 function sendOrder(){
     const order={};
     for(let k in cart) if(cart[k]>0) order[k]=cart[k];
-    Telegram.WebApp.sendData(JSON.stringify({
-        order,
-        phone: phone.value||'—',
-        comment: comment.value||'—',
-        delivery: type,
-        address: type==='delivery'?address.value:'Самовывоз',
-        total: total.innerText,
-        payment: payment,
-        lang
-    }));
+    Telegram.WebApp.sendData(JSON.stringify({order,phone:phone.value||'—',comment:comment.value||'—',delivery:type,address:type==='delivery'?address.value:'Самовывоз',total:total.innerText,payment,lang}));
     Telegram.WebApp.close();
 }
 
@@ -345,22 +315,3 @@ applyLang();
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
