@@ -33,12 +33,15 @@ body{
     background:linear-gradient(135deg,#4a90e2,#6fb1ff);
     color:#fff;
     box-shadow:0 6px 20px rgba(0,0,0,.12);
+    position: sticky;
+    top:0;
+    z-index: 1000;
 }
 .logo-wrap{display:flex;align-items:center;gap:12px;}
 .header img{max-width:110px;}
 .header-title{
     font-family:'Montserrat',sans-serif;
-    font-size:30px;
+    font-size:28px;
     font-weight:900;
     letter-spacing:.4px;
 }
@@ -68,6 +71,7 @@ body{
     gap:10px;
     padding:10px;
     overflow-x:auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* BUTTON */
@@ -80,6 +84,7 @@ body{
     font-weight:600;
     transition:.25s;
     box-shadow:0 3px 8px rgba(0,0,0,.05);
+    white-space: nowrap;
 }
 .btn.active{
     background:linear-gradient(135deg,#4a90e2,#6fb1ff);
@@ -148,7 +153,7 @@ textarea{resize:none;}
     font-size:16px;
 }
 .counter button{
-    width:32px;height:32px;
+    width:36px;height:36px;
     border-radius:50%;
     border:none;
     font-size:18px;
@@ -167,6 +172,9 @@ textarea{resize:none;}
     padding:16px;
     border-radius:22px;
     box-shadow:0 12px 30px rgba(0,0,0,.1);
+    position: sticky;
+    bottom: 0;
+    z-index: 1000;
 }
 .order-btn{
     width:100%;
@@ -179,10 +187,18 @@ textarea{resize:none;}
     font-size:16px;
     font-weight:800;
 }
+
+/* MEDIA */
+@media(max-width:600px){
+    .products{
+        grid-template-columns:1fr;
+    }
+    .header-title{font-size:24px;}
+    .counter button{width:32px;height:32px;font-size:16px;}
+}
 </style>
 
 </head>
-
 <body>
 
 <div class="header">
@@ -237,9 +253,9 @@ en:{delivery:'🚚 Delivery',pickup:'🏃 Pickup',address:'📍 Address',phone:'
 };
 
 const CATS={
-ru:{salads:'🥗 Салаты',kebab:'🔥 Шашлык',national:'🍲 Национальные',grill:'🥩 На мангале',first:'🍜 Первые',drinks:'🥤 Напитки',bread:'🥖 Хлеб'},
-uz:{salads:'🥗 Salatlar',kebab:'🔥 Shashlik',national:'🍲 Milliy',grill:'🥩 Mangal',first:'🍜 Sho‘rva',drinks:'🥤 Ichimliklar',bread:'🥖 Non'},
-en:{salads:'🥗 Salads',kebab:'🔥 Kebab',national:'🍲 National',grill:'🥩 Grill',first:'🍜 Soups',drinks:'🥤 Drinks',bread:'🥖 Bread'}
+ru:{salads:'🥗 Салаты',kebab:'🔥 Шашлык',national:'🍲 Национальные блюда',grill:'🥩 Блюда на мангале',first:'🍜 Первые блюда',drinks:'🥤 Напитки',bread:'🥖 Хлеб'},
+uz:{salads:'🥗 Salatlar',kebab:'🔥 Shashlik',national:'🍲 Milliy taomlar',grill:'🥩 Mangal taomlari',first:'🍜 Birinchi taomlar',drinks:'🥤 Ichimliklar',bread:'🥖 Non'},
+en:{salads:'🥗 Salads',kebab:'🔥 Kebab',national:'🍲 National dishes',grill:'🥩 Grill dishes',first:'🍜 First dishes',drinks:'🥤 Drinks',bread:'🥖 Bread'}
 };
 
 const MENU={
@@ -301,13 +317,10 @@ function renderProducts(){
 
 function chg(n,v,btn){
     cart[n]=Math.max(0,(cart[n]||0)+v);
-
     const el=document.getElementById('c_'+n);
     if(el) el.innerText=cart[n];
-
     btn.style.transform='scale(.85)';
     setTimeout(()=>btn.style.transform='',120);
-
     upd();
 }
 
@@ -330,7 +343,6 @@ function setType(t,b){
 function sendOrder(){
     const order={};
     for(let k in cart) if(cart[k]>0) order[k]=cart[k];
-
     Telegram.WebApp.sendData(JSON.stringify({
         order,
         phone: phone.value||'—',
@@ -349,7 +361,6 @@ applyLang();
 
 </body>
 </html>
-
 
 
 
