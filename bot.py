@@ -7,24 +7,24 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiohttp import web
 
 # =====================================================
-# 🔐 НАСТРОЙКИ ТОКЕНА (FIX ДЛЯ BOTHOST)
+# 🔐 BOT TOKEN — FIX ДЛЯ BOTHOST
 # =====================================================
+
 BOT_TOKEN = (
     os.getenv("TELEGRAM_BOT_TOKEN")
     or os.getenv("BOT_TOKEN")
     or os.getenv("API_TOKEN")
     or os.getenv("BOT_API_TOKEN")
     or os.getenv("TOKEN")
+    or "8525626062:AAGqnee7mzlP9OjrEOYYirzArf2MYgIK95Q"  # ← ОБЯЗАТЕЛЬНО ВСТАВЬ СЮДА ТОКЕН
 )
-
-if not BOT_TOKEN:
-    raise RuntimeError("❌ BOT TOKEN NOT FOUND IN ENV VARIABLES")
 
 ADMIN_ID = 6013591658
 
 # =====================================================
 # ВНЕШНИЕ СЕРВИСЫ
 # =====================================================
+
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSG6M86JhMZr34RI1ajn3xZhEJDXsbX44tiXGiW-YtXLGY9X2T59HBpHs2CrRuuy49/exec"
 
 CLICK_TEST_URL = "https://my.click.uz/services/pay"
@@ -106,7 +106,6 @@ async def get_order(message: types.Message):
 
     await bot.send_message(ADMIN_ID, admin_message)
 
-    # Google Sheets
     requests.post(
         GOOGLE_SCRIPT_URL,
         json={
@@ -119,9 +118,6 @@ async def get_order(message: types.Message):
         }
     )
 
-    # =====================================================
-    # КНОПКА CLICK
-    # =====================================================
     if payment == "click":
         click_url = (
             f"{CLICK_TEST_URL}?"
@@ -195,20 +191,3 @@ if __name__ == "__main__":
         skip_updates=True,
         on_startup=on_startup
     )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
