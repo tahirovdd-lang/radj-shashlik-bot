@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import requests
+import uuid
 from aiogram import Bot, Dispatcher, executor, types
 from aiohttp import web
 
@@ -10,6 +11,11 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = 6013591658
 
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSG6M86JhMZr34RI1ajn3xZhEJDXsbX44tiXGiW-YtXLGY9X2T59HBpHs2CrRuuy49/exec"
+
+CLICK_TEST_URL = "https://my.click.uz/services/pay"  # CLICKtest
+CLICK_SERVICE_ID = "99999"  # тестовый service_id
+CLICK_MERCHANT_ID = "99999"  # тестовый merchant_id
+CALLBACK_URL = "https://YOUR_DOMAIN/click/callback"  # ❗ поменяешь на боевой
 
 logging.basicConfig(level=logging.INFO)
 
@@ -41,20 +47,18 @@ async def start(message: types.Message):
 # =====================================================
 @dp.message_handler(content_types=types.ContentType.WEB_APP_DATA)
 async def get_order(message: types.Message):
-    try:
-        data = json.loads(message.web_app_data.data)
-    except Exception as e:
-        logging.error(f"JSON error: {e}")
-        return
+    data = json.loads(message.web_app_data.data)
 
     order = data.get("order", {})
     phone = data.get("phone", "—")
     comment = data.get("comment", "—")
-    total = data.get("total", "0")
+    total = int(data.get("total", 0))
     lang = data.get("lang", "ru")
     delivery = data.get("delivery", "—")
     address = data.get("address", "—")
-    payment = data.get("payment", "cash")  # cash / click
+    payment = data.get("payment", "cash")
+
+    order_id = str(uuid.uuid4())[:8]  # 🔹 ШАГ 4
 
     payment_text = {
         "cash": "💵 Наличные",
@@ -72,71 +76,69 @@ async def get_order(message: types.Message):
 
     admin_message = (
         "📥 <b>НОВЫЙ ЗАКАЗ</b>\n\n"
+        f"🆔 Заказ: <code>{order_id}</code>\n"
         f"👤 ID: <code>{user.id}</code>\n"
         f"👤 Ник: {username}\n"
         f"📞 Телефон: {phone}\n"
         f"🚚 Тип: {delivery}\n"
         f"📍 Адрес: {address}\n"
         f"💳 Оплата: <b>{payment_text}</b>\n"
-        f"💬 Комментарий: {comment}\n\n"
         f"{items_text}\n\n"
         f"💰 <b>{total} сум</b>"
     )
 
-    # 👉 Админу
-    try:
-        await bot.send_message(ADMIN_ID, admin_message)
-    except Exception as e:
-        logging.error(f"Admin send error: {e}")
+    await bot.send_message(ADMIN_ID, admin_message)
 
-    # 👉 Google Sheets
-    try:
-        requests.post(
-            GOOGLE_SCRIPT_URL,
-            json={
-                "user_id": user.id,
-                "username": username,
-                "phone": phone,
-                "delivery": delivery,
-                "address": address,
-                "payment": payment_text,
-                "comment": comment,
-                "items": items_text,
-                "total": total
-            },
-            timeout=10
-        )
-    except Exception as e:
-        logging.error(f"Google Sheets error: {e}")
-
-    replies = {
-        "ru": {
-            "cash": "✅ Заказ принят! Оплата наличными при получении.",
-            "click": "🕒 Заказ принят! Ожидаем оплату через CLICK."
-        },
-        "uz": {
-            "cash": "✅ Buyurtma qabul qilindi! To‘lov naqd.",
-            "click": "🕒 CLICK orqali to‘lov kutilmoqda."
-        },
-        "en": {
-            "cash": "✅ Order received! Cash payment.",
-            "click": "🕒 CLICK payment pending."
+    # Google Sheets
+    requests.post(
+        GOOGLE_SCRIPT_URL,
+        json={
+            "order_id": order_id,
+            "user_id": user.id,
+            "phone": phone,
+            "payment": payment_text,
+            "items": items_text,
+            "total": total
         }
-    }
-
-    await message.answer(
-        replies.get(lang, replies["ru"]).get(payment, "✅ Заказ принят!")
     )
 
+    # =====================================================
+    # 🔹 ШАГ 5 — КНОПКА ОПЛАТЫ CLICK
+    # =====================================================
+    if payment == "click":
+        click_url = (
+            f"{CLICK_TEST_URL}?"
+            f"service_id={CLICK_SERVICE_ID}&"
+            f"merchant_id={CLICK_MERCHANT_ID}&"
+            f"amount={total}&"
+            f"transaction_param={order_id}&"
+            f"return_url=https://t.me/RadjShashlikbot"
+        )
+
+        keyboard = types.InlineKeyboardMarkup()
+        keyboard.add(
+            types.InlineKeyboardButton(
+                text="💳 Оплатить через CLICK",
+                url=click_url
+            )
+        )
+
+        await message.answer(
+            "🕒 Заказ принят!\nНажмите кнопку ниже для оплаты через CLICK 👇",
+            reply_markup=keyboard
+        )
+    else:
+        await message.answer("✅ Заказ принят! Оплата наличными при получении.")
+
 # =====================================================
-# CLICK TEST CALLBACK (ШАГ 5–6)
+# 🔹 ШАГ 6–7 — CALLBACK ОТ CLICKtest
 # =====================================================
 async def click_callback(request):
-    data = await request.json()
+    data = await request.post()
 
-    order_id = data.get("order_id", "—")
+    order_id = data.get("transaction_param")
     status = data.get("status", "failed")
-    amount = data.get("amount", "0")
+    amount = data.get("amount")
 
     if status == "success":
         text = (
@@ -151,10 +153,10 @@ async def click_callback(request):
         )
 
     await bot.send_message(ADMIN_ID, text)
-    return web.json_response({"ok": True})
+    return web.Response(text="OK")
 
 # =====================================================
-# ЗАПУСК WEB CALLBACK СЕРВЕРА
+# WEB SERVER
 # =====================================================
 async def on_startup(dp):
     app = web.Application()
@@ -176,6 +178,7 @@ if __name__ == "__main__":
         skip_updates=True,
         on_startup=on_startup
     )
+
 
 
 
