@@ -48,6 +48,25 @@ body{
     font-size:18px;
 }
 
+/* CONTACT PHONE */
+.contact-block{
+    text-align:center;
+    margin:8px 0 4px;
+}
+.contact-search{
+    font-size:18px;
+    opacity:.6;
+}
+.contact-phone{
+    display:inline-block;
+    margin-top:4px;
+    font-size:16px;
+    font-weight:800;
+    color:#2e7d32;
+    text-decoration:none;
+}
+.contact-phone:active{opacity:.6;}
+
 /* SEARCH */
 .search-input{
     display:none;
@@ -167,7 +186,18 @@ textarea{resize:none;}
     <button class="search-btn" onclick="toggleSearch()">🔍</button>
 </div>
 
+<!-- 📞 CONTACT PHONE (ДОБАВЛЕНО) -->
+<div class="contact-block">
+    <div class="contact-search">🔍</div>
+    <a href="tel:+998933378888" class="contact-phone">
+        📞 +998 93 337 88 88
+    </a>
+</div>
+
 <input id="search" class="search-input">
+
+<!-- дальше код БЕЗ ИЗМЕНЕНИЙ -->
+
 
 <div class="langs">
     <button class="btn active" onclick="setLang('ru',this)">RU</button>
