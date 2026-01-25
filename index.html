@@ -9,25 +9,103 @@
 <style>
 body{margin:0;font-family:Arial,sans-serif;background:#f2f4f7;}
 .header{padding:15px;display:flex;align-items:center;justify-content:space-between;}
-.logo-wrap{display:flex;align-items:center;gap:10px;}
+.logo-wrap{display:flex;align-items:center;gap:12px;}
 .header img{max-width:120px;}
-.header-title{font-size:20px;font-weight:bold;}
+.header-title{font-size:26px;font-weight:800;letter-spacing:0.5px;}
 .search-btn{width:36px;height:36px;border-radius:50%;border:none;background:#4a90e2;color:#fff;font-size:18px;}
 .search-input{display:none;margin:0 10px 10px;padding:12px;width:calc(100% - 20px);border-radius:14px;border:none;}
-.langs,.types,.categories,.payments{display:flex;gap:10px;padding:10px;overflow-x:auto;}
-.btn{padding:10px 14px;border-radius:14px;background:#fff;border:none;font-size:14px;}
-.btn.active{background:#4a90e2;color:#fff;}
-.input,textarea{margin:10px;padding:12px;width:calc(100% - 20px);border-radius:14px;border:none;font-size:14px;}
+
+.langs,.types,.categories,.payments{
+    display:flex;
+    gap:10px;
+    padding:10px;
+    overflow-x:auto;
+}
+
+.btn{
+    padding:10px 16px;
+    border-radius:20px;
+    background:#fff;
+    border:1px solid #dfe3e8;
+    font-size:14px;
+    font-weight:600;
+    transition:0.2s;
+}
+.btn.active{
+    background:#4a90e2;
+    color:#fff;
+    border-color:#4a90e2;
+}
+
+.langs .btn{
+    min-width:60px;
+    justify-content:center;
+}
+
+.payments .btn{
+    flex:1;
+    text-align:center;
+    font-size:15px;
+}
+
+.input,textarea{
+    margin:10px;
+    padding:12px;
+    width:calc(100% - 20px);
+    border-radius:14px;
+    border:none;
+    font-size:14px;
+}
 textarea{resize:none;}
-.products{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:10px;}
-.card{background:#fff;border-radius:16px;padding:10px;text-align:center;}
-.img{height:100px;background:#e1e5ea;border-radius:12px;display:flex;align-items:center;justify-content:center;}
+
+.products{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:12px;
+    padding:10px;
+}
+.card{
+    background:#fff;
+    border-radius:16px;
+    padding:10px;
+    text-align:center;
+}
+.img{
+    height:100px;
+    background:#e1e5ea;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
 .price{margin-top:6px;font-weight:bold;color:#2e7d32;}
 .name{font-size:14px;margin-top:4px;}
 .counter{display:flex;justify-content:center;gap:10px;margin-top:6px;}
-.counter button{width:30px;height:30px;border-radius:50%;border:none;font-size:18px;}
-.cart{background:#fff;margin:10px;padding:12px;border-radius:16px;}
-.order-btn{width:100%;padding:14px;margin-top:10px;border:none;border-radius:14px;background:#4a90e2;color:#fff;font-size:16px;}
+.counter button{
+    width:30px;height:30px;
+    border-radius:50%;
+    border:none;
+    font-size:18px;
+    background:#eef1f4;
+}
+
+.cart{
+    background:#fff;
+    margin:10px;
+    padding:14px;
+    border-radius:18px;
+}
+.order-btn{
+    width:100%;
+    padding:14px;
+    margin-top:12px;
+    border:none;
+    border-radius:16px;
+    background:#4a90e2;
+    color:#fff;
+    font-size:16px;
+    font-weight:700;
+}
 </style>
 </head>
 
@@ -60,15 +138,16 @@ textarea{resize:none;}
 <div class="categories" id="cats"></div>
 <div class="products" id="products"></div>
 
-<!-- 🔴 PAYMENT BLOCK -->
-<div class="payments">
-    <button class="btn active" onclick="setPayment('cash')" id="payCash">💵 Наличные</button>
-    <button class="btn" onclick="setPayment('click')" id="payClick">💳 CLICK</button>
-</div>
-
 <div class="cart">
     <b id="cartTitle"></b>: <span id="total">0</span> сум
     <textarea id="comment" rows="3"></textarea>
+
+    <!-- 🔴 PAYMENT BLOCK (ПЕРЕНЕСЁН НИЖЕ КОММЕНТАРИЯ) -->
+    <div class="payments">
+        <button class="btn active" onclick="setPayment('cash')" id="payCash">💵 Наличные</button>
+        <button class="btn" onclick="setPayment('click')" id="payClick">💳 CLICK</button>
+    </div>
+
     <button class="order-btn" onclick="sendOrder()" id="orderBtn"></button>
 </div>
 
@@ -76,7 +155,7 @@ textarea{resize:none;}
 Telegram.WebApp.ready();
 
 let lang='ru',category='salads',type='delivery',cart={},searchValue='';
-let payment='cash'; // 🔴 PAYMENT
+let payment='cash';
 
 const TEXT={
 ru:{delivery:'🚚 Доставка',pickup:'🏃 Самовывоз',address:'📍 Адрес доставки',phone:'📞 Телефон',cart:'🛒 Корзина',order:'Оформить заказ',comment:'💬 Комментарий к заказу',search:'🔎 Поиск блюд'},
@@ -114,8 +193,8 @@ function applyLang(){
 
 function setPayment(p){
     payment=p;
-    document.getElementById('payCash').classList.remove('active');
-    document.getElementById('payClick').classList.remove('active');
+    payCash.classList.remove('active');
+    payClick.classList.remove('active');
     (p==='cash'?payCash:payClick).classList.add('active');
 }
 
@@ -177,7 +256,7 @@ function sendOrder(){
         delivery: type,
         address: type==='delivery'?address.value:'Самовывоз',
         total: total.innerText,
-        payment: payment, // 🔴 PAYMENT
+        payment: payment,
         lang
     }));
     Telegram.WebApp.close();
@@ -188,6 +267,7 @@ applyLang();
 
 </body>
 </html>
+
 
 
 
