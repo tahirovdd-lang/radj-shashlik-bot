@@ -6,6 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
+<!-- 🔤 Новый шрифт -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+
 <style>
 :root{
     --blue:#4a90e2;
@@ -33,7 +36,12 @@ body{
 }
 .logo-wrap{display:flex;align-items:center;gap:12px;}
 .header img{max-width:110px;}
-.header-title{font-size:24px;font-weight:800;}
+.header-title{
+    font-family:'Montserrat',sans-serif;
+    font-size:30px;
+    font-weight:900;
+    letter-spacing:.4px;
+}
 .search-btn{
     width:38px;height:38px;
     border-radius:50%;
@@ -134,12 +142,22 @@ textarea{resize:none;}
     gap:12px;
     margin-top:8px;
 }
+.counter span{
+    min-width:22px;
+    font-weight:800;
+    font-size:16px;
+}
 .counter button{
     width:32px;height:32px;
     border-radius:50%;
     border:none;
     font-size:18px;
     background:#eef1f4;
+    transition:.15s;
+}
+.counter button:active{
+    transform:scale(.85);
+    background:#dbe2ea;
 }
 
 /* CART */
@@ -178,14 +196,14 @@ textarea{resize:none;}
 <input id="search" class="search-input">
 
 <div class="langs">
-    <button class="btn active" onclick="setLang('ru')">RU</button>
-    <button class="btn" onclick="setLang('uz')">UZ</button>
-    <button class="btn" onclick="setLang('en')">EN</button>
+    <button class="btn active" onclick="setLang('ru',this)">RU</button>
+    <button class="btn" onclick="setLang('uz',this)">UZ</button>
+    <button class="btn" onclick="setLang('en',this)">EN</button>
 </div>
 
 <div class="types">
-    <button class="btn active" onclick="setType('delivery')" id="btnDelivery"></button>
-    <button class="btn" onclick="setType('pickup')" id="btnPickup"></button>
+    <button class="btn active" onclick="setType('delivery',this)" id="btnDelivery"></button>
+    <button class="btn" onclick="setType('pickup',this)" id="btnPickup"></button>
 </div>
 
 <input id="address" class="input">
@@ -198,7 +216,6 @@ textarea{resize:none;}
     <b id="cartTitle"></b>: <span id="total">0</span> сум
     <textarea id="comment" rows="3"></textarea>
 
-    <!-- 🔴 PAYMENT BLOCK (ПЕРЕНЕСЁН НИЖЕ КОММЕНТАРИЯ) -->
     <div class="payments">
         <button class="btn active" onclick="setPayment('cash')" id="payCash">💵 Наличные</button>
         <button class="btn" onclick="setPayment('click')" id="payClick">💳 CLICK</button>
@@ -249,9 +266,8 @@ function applyLang(){
 
 function setPayment(p){
     payment=p;
-    payCash.classList.remove('active');
-    payClick.classList.remove('active');
-    (p==='cash'?payCash:payClick).classList.add('active');
+    payCash.classList.toggle('active',p==='cash');
+    payClick.classList.toggle('active',p==='click');
 }
 
 function toggleSearch(){search.style.display=search.style.display==='block'?'none':'block';}
@@ -274,30 +290,40 @@ function renderProducts(){
             <div class="price">${p} сум</div>
             <div class="name">${n}</div>
             <div class="counter">
-                <button onclick="chg('${n}',-1)">−</button>
-                <span>${cart[n]}</span>
-                <button onclick="chg('${n}',1)">+</button>
+                <button onclick="chg('${n}',-1,this)">−</button>
+                <span id="c_${n}">${cart[n]}</span>
+                <button onclick="chg('${n}',1,this)">+</button>
             </div>
         </div>`;
     });
     upd();
 }
 
-function chg(n,v){cart[n]=Math.max(0,(cart[n]||0)+v);renderProducts();}
+function chg(n,v,btn){
+    cart[n]=Math.max(0,(cart[n]||0)+v);
+
+    const el=document.getElementById('c_'+n);
+    if(el) el.innerText=cart[n];
+
+    btn.style.transform='scale(.85)';
+    setTimeout(()=>btn.style.transform='',120);
+
+    upd();
+}
+
 function upd(){let s=0;for(let k in cart)s+=cart[k]*price(k);total.innerText=s;}
 function price(n){for(let c in MENU)for(let i of MENU[c])if(i[0]==n)return i[1];}
 
-function setLang(l){
+function setLang(l,b){
     lang=l;
-    document.querySelectorAll('.langs .btn').forEach(b=>b.classList.remove('active'));
-    event.target.classList.add('active');
+    document.querySelectorAll('.langs .btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
     applyLang();
 }
-
-function setType(t){
+function setType(t,b){
     type=t;
-    document.querySelectorAll('.types .btn').forEach(b=>b.classList.remove('active'));
-    event.target.classList.add('active');
+    document.querySelectorAll('.types .btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
     address.style.display=t==='pickup'?'none':'block';
 }
 
@@ -323,6 +349,7 @@ applyLang();
 
 </body>
 </html>
+
 
 
 
