@@ -33,15 +33,12 @@ body{
     background:linear-gradient(135deg,#4a90e2,#6fb1ff);
     color:#fff;
     box-shadow:0 6px 20px rgba(0,0,0,.12);
-    position: sticky;
-    top:0;
-    z-index: 1000;
 }
 .logo-wrap{display:flex;align-items:center;gap:12px;}
 .header img{max-width:110px;}
 .header-title{
     font-family:'Montserrat',sans-serif;
-    font-size:28px;
+    font-size:30px;
     font-weight:900;
     letter-spacing:.4px;
 }
@@ -71,7 +68,6 @@ body{
     gap:10px;
     padding:10px;
     overflow-x:auto;
-    -webkit-overflow-scrolling: touch;
 }
 
 /* BUTTON */
@@ -84,7 +80,6 @@ body{
     font-weight:600;
     transition:.25s;
     box-shadow:0 3px 8px rgba(0,0,0,.05);
-    white-space: nowrap;
 }
 .btn.active{
     background:linear-gradient(135deg,#4a90e2,#6fb1ff);
@@ -153,7 +148,7 @@ textarea{resize:none;}
     font-size:16px;
 }
 .counter button{
-    width:36px;height:36px;
+    width:32px;height:32px;
     border-radius:50%;
     border:none;
     font-size:18px;
@@ -172,9 +167,6 @@ textarea{resize:none;}
     padding:16px;
     border-radius:22px;
     box-shadow:0 12px 30px rgba(0,0,0,.1);
-    position: sticky;
-    bottom: 0;
-    z-index: 1000;
 }
 .order-btn{
     width:100%;
@@ -187,18 +179,10 @@ textarea{resize:none;}
     font-size:16px;
     font-weight:800;
 }
-
-/* MEDIA */
-@media(max-width:600px){
-    .products{
-        grid-template-columns:1fr;
-    }
-    .header-title{font-size:24px;}
-    .counter button{width:32px;height:32px;font-size:16px;}
-}
 </style>
 
 </head>
+
 <body>
 
 <div class="header">
@@ -264,7 +248,7 @@ kebab:[['Молотый',28000],['Кусковой баранина',30000],['К
 national:[['Жиз Биз 1кг',260000],['Жиз Биз 0.5кг',130000]],
 grill:[['Стейк куриный',100000],['Баранина с грибами 1кг',200000]],
 first:[['Шурпа',35000],['Борщ',25000],['Мастава',25000]],
-drinks:[['Чай',5000],['Coca-Cola 1L',14000],['Fanta 1.5L',18000]],
+drinks:[['Чай',5000],['Coca-Cola 1L',14000],['Fanta 1.5L',18000],['Лимонад Тархун 0.5L',12000]],
 bread:[['Лепешка',10000]]
 };
 
@@ -361,6 +345,7 @@ applyLang();
 
 </body>
 </html>
+
 
 
 
