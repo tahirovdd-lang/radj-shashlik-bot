@@ -7,14 +7,54 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-body{margin:0;font-family:Arial,sans-serif;background:#f2f4f7;}
-.header{padding:15px;display:flex;align-items:center;justify-content:space-between;}
-.logo-wrap{display:flex;align-items:center;gap:12px;}
-.header img{max-width:120px;}
-.header-title{font-size:26px;font-weight:800;letter-spacing:0.5px;}
-.search-btn{width:36px;height:36px;border-radius:50%;border:none;background:#4a90e2;color:#fff;font-size:18px;}
-.search-input{display:none;margin:0 10px 10px;padding:12px;width:calc(100% - 20px);border-radius:14px;border:none;}
+:root{
+    --blue:#4a90e2;
+    --green:#2e7d32;
+    --bg:#f2f4f7;
+}
 
+/* BASE */
+body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    background:linear-gradient(180deg,#eef2f7,#f7f9fc);
+    color:#1c1c1e;
+}
+
+/* HEADER */
+.header{
+    padding:16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:linear-gradient(135deg,#4a90e2,#6fb1ff);
+    color:#fff;
+    box-shadow:0 6px 20px rgba(0,0,0,.12);
+}
+.logo-wrap{display:flex;align-items:center;gap:12px;}
+.header img{max-width:110px;}
+.header-title{font-size:24px;font-weight:800;}
+.search-btn{
+    width:38px;height:38px;
+    border-radius:50%;
+    border:none;
+    background:rgba(255,255,255,.25);
+    color:#fff;
+    font-size:18px;
+}
+
+/* SEARCH */
+.search-input{
+    display:none;
+    margin:10px;
+    padding:14px;
+    width:calc(100% - 20px);
+    border-radius:18px;
+    border:none;
+    box-shadow:0 6px 20px rgba(0,0,0,.08);
+}
+
+/* BUTTON GROUPS */
 .langs,.types,.categories,.payments{
     display:flex;
     gap:10px;
@@ -22,91 +62,107 @@ body{margin:0;font-family:Arial,sans-serif;background:#f2f4f7;}
     overflow-x:auto;
 }
 
+/* BUTTON */
 .btn{
-    padding:10px 16px;
-    border-radius:20px;
+    padding:10px 18px;
+    border-radius:22px;
     background:#fff;
-    border:1px solid #dfe3e8;
+    border:1px solid #e1e5ea;
     font-size:14px;
     font-weight:600;
-    transition:0.2s;
+    transition:.25s;
+    box-shadow:0 3px 8px rgba(0,0,0,.05);
 }
 .btn.active{
-    background:#4a90e2;
+    background:linear-gradient(135deg,#4a90e2,#6fb1ff);
     color:#fff;
-    border-color:#4a90e2;
+    border:none;
+    box-shadow:0 8px 20px rgba(74,144,226,.45);
 }
 
-.langs .btn{
-    min-width:60px;
-    justify-content:center;
+/* PAYMENTS */
+.payments .btn{flex:1;font-size:15px;}
+#payClick.active{
+    background:linear-gradient(135deg,#00c853,#64dd17);
+    box-shadow:0 10px 24px rgba(0,200,83,.45);
 }
 
-.payments .btn{
-    flex:1;
-    text-align:center;
-    font-size:15px;
-}
-
+/* INPUTS */
 .input,textarea{
     margin:10px;
-    padding:12px;
+    padding:14px;
     width:calc(100% - 20px);
-    border-radius:14px;
+    border-radius:18px;
     border:none;
     font-size:14px;
+    background:#fff;
+    box-shadow:0 6px 18px rgba(0,0,0,.08);
 }
 textarea{resize:none;}
 
+/* PRODUCTS */
 .products{
     display:grid;
     grid-template-columns:repeat(2,1fr);
-    gap:12px;
-    padding:10px;
+    gap:14px;
+    padding:12px;
 }
 .card{
     background:#fff;
-    border-radius:16px;
-    padding:10px;
+    border-radius:20px;
+    padding:12px;
     text-align:center;
+    box-shadow:0 10px 24px rgba(0,0,0,.08);
 }
 .img{
-    height:100px;
-    background:#e1e5ea;
-    border-radius:12px;
+    height:110px;
+    border-radius:16px;
+    background:linear-gradient(135deg,#eceff4,#dde3ea);
     display:flex;
     align-items:center;
     justify-content:center;
+    color:#9aa0a6;
+    font-weight:600;
 }
-.price{margin-top:6px;font-weight:bold;color:#2e7d32;}
-.name{font-size:14px;margin-top:4px;}
-.counter{display:flex;justify-content:center;gap:10px;margin-top:6px;}
+.price{margin-top:8px;font-weight:800;color:var(--green);}
+.name{font-size:14px;margin-top:6px;}
+
+/* COUNTER */
+.counter{
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    margin-top:8px;
+}
 .counter button{
-    width:30px;height:30px;
+    width:32px;height:32px;
     border-radius:50%;
     border:none;
     font-size:18px;
     background:#eef1f4;
 }
 
+/* CART */
 .cart{
     background:#fff;
-    margin:10px;
-    padding:14px;
-    border-radius:18px;
+    margin:12px;
+    padding:16px;
+    border-radius:22px;
+    box-shadow:0 12px 30px rgba(0,0,0,.1);
 }
 .order-btn{
     width:100%;
-    padding:14px;
-    margin-top:12px;
+    padding:16px;
+    margin-top:14px;
     border:none;
-    border-radius:16px;
-    background:#4a90e2;
+    border-radius:20px;
+    background:linear-gradient(135deg,#4a90e2,#6fb1ff);
     color:#fff;
     font-size:16px;
-    font-weight:700;
+    font-weight:800;
 }
 </style>
+
 </head>
 
 <body>
