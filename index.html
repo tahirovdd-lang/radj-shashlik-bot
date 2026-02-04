@@ -73,6 +73,7 @@ body{
     border:1px solid #e1e5ea;
     font-size:14px;
     font-weight:600;
+    white-space:nowrap;
 }
 .btn.active{
     background:linear-gradient(135deg,#4a90e2,#6fb1ff);
@@ -142,6 +143,7 @@ textarea{resize:none;}
     margin:12px;
     padding:16px;
     border-radius:22px;
+    box-shadow:0 10px 24px rgba(0,0,0,.06);
 }
 .order-btn{
     width:100%;
@@ -153,6 +155,50 @@ textarea{resize:none;}
     color:#fff;
     font-size:16px;
     font-weight:800;
+}
+
+/* CARD PAYMENT BOX (Variant B) */
+.cardpay{
+    display:none;
+    margin:10px;
+    padding:14px;
+    border-radius:18px;
+    border:1px solid #e1e5ea;
+    background:linear-gradient(180deg,#ffffff,#f7fbff);
+}
+.cardpay .row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:10px;
+}
+.small{
+    font-size:12px;
+    opacity:.75;
+    line-height:1.3;
+}
+.kv{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    margin-top:8px;
+    font-weight:700;
+}
+.kv span:first-child{opacity:.7;font-weight:600;}
+.secondary-btn{
+    padding:12px 14px;
+    border-radius:16px;
+    border:1px solid #e1e5ea;
+    background:#fff;
+    font-weight:800;
+    cursor:pointer;
+}
+.note-ok{
+    margin-top:10px;
+    font-size:12px;
+    color:#2e7d32;
+    font-weight:700;
+    display:none;
 }
 </style>
 </head>
@@ -193,6 +239,36 @@ textarea{resize:none;}
     <div class="payments">
         <button class="btn active" onclick="setPayment('cash')" id="payCash">💵 Наличные</button>
         <button class="btn" onclick="setPayment('click')" id="payClick">💳 CLICK</button>
+        <button class="btn" onclick="setPayment('card')" id="payCard">💳 Онлайн на карту</button>
+    </div>
+
+    <!-- VARIANT B: card transfer info -->
+    <div class="cardpay" id="cardPayBox">
+        <div style="font-weight:900;font-size:14px" id="cardPayTitle">💳 Оплата переводом на карту</div>
+
+        <div class="kv">
+            <span id="cardLabel">Карта</span>
+            <span id="cardNumberText">9860 1001 2635 9502</span>
+        </div>
+        <div class="kv">
+            <span id="ownerLabel">Владелец</span>
+            <span id="cardOwnerText">Daler Takhirov</span>
+        </div>
+        <div class="kv">
+            <span id="amountLabel">Сумма к оплате</span>
+            <span><span id="amountToPay">0</span> сум</span>
+        </div>
+
+        <div class="row">
+            <button class="secondary-btn" onclick="copyCard()" id="copyCardBtn">📋 Скопировать карту</button>
+            <button class="secondary-btn" onclick="copyAmount()" id="copyAmountBtn">📋 Скопировать сумму</button>
+            <button class="secondary-btn" onclick="openProofChat()" id="sendCheckBtn">📩 Отправить чек</button>
+        </div>
+
+        <div class="small" id="cardPayHint" style="margin-top:10px">
+            После перевода отправьте скрин/чек в чат (кнопка «Отправить чек»), затем нажмите «Оформить заказ».
+        </div>
+        <div class="note-ok" id="copiedNote">✅ Скопировано</div>
     </div>
 
     <button class="order-btn" onclick="sendOrder()" id="orderBtn"></button>
@@ -201,13 +277,49 @@ textarea{resize:none;}
 <script>
 Telegram.WebApp.ready();
 
+/* ====== SETTINGS (Variant B) ====== */
+const CARD_NUMBER_RAW = "9860100126359502";
+const CARD_OWNER = "Daler Takhirov";
+
+/*
+  Если у тебя есть @username менеджера/аккаунта (например: "DalerTakhirov"),
+  впиши сюда без @. Тогда кнопка "Отправить чек" откроет чат напрямую.
+  Если оставить пустым, откроется окно "Поделиться" (пользователь сам выберет чат).
+*/
+const MANAGER_USERNAME = "@Yaki_Tahirov";
+
+/* ====== APP STATE ====== */
 let lang='ru',category='salads',type='delivery',cart={},searchValue='';
 let payment='cash';
 
 const TEXT={
-ru:{delivery:'🚚 Доставка',pickup:'🏃 Самовывоз',address:'📍 Адрес доставки',phone:'📞 Телефон',cart:'🛒 Корзина',order:'Оформить заказ',comment:'💬 Комментарий к заказу',search:'🔎 Поиск блюд'},
-uz:{delivery:'🚚 Yetkazib berish',pickup:'🏃 Olib ketish',address:'📍 Manzil',phone:'📞 Telefon',cart:'🛒 Savat',order:'Buyurtma berish',comment:'💬 Izoh',search:'🔎 Qidirish'},
-en:{delivery:'🚚 Delivery',pickup:'🏃 Pickup',address:'📍 Address',phone:'📞 Phone',cart:'🛒 Cart',order:'Place order',comment:'💬 Comment',search:'🔎 Search'}
+ru:{
+  delivery:'🚚 Доставка',pickup:'🏃 Самовывоз',address:'📍 Адрес доставки',phone:'📞 Телефон',
+  cart:'🛒 Корзина',order:'Оформить заказ',comment:'💬 Комментарий к заказу',search:'🔎 Поиск блюд',
+  payCard:'💳 Онлайн на карту',
+  cardTitle:'💳 Оплата переводом на карту', cardLabel:'Карта', ownerLabel:'Владелец', amountLabel:'Сумма к оплате',
+  copyCard:'📋 Скопировать карту', copyAmount:'📋 Скопировать сумму', sendCheck:'📩 Отправить чек',
+  cardHint:'После перевода отправьте скрин/чек в чат (кнопка «Отправить чек»), затем нажмите «Оформить заказ».',
+  emptyCart:'Корзина пустая'
+},
+uz:{
+  delivery:'🚚 Yetkazib berish',pickup:'🏃 Olib ketish',address:'📍 Manzil',phone:'📞 Telefon',
+  cart:'🛒 Savat',order:'Buyurtma berish',comment:'💬 Izoh',search:'🔎 Qidirish',
+  payCard:'💳 Karta orqali online',
+  cardTitle:'💳 Kartaga o‘tkazma orqali to‘lov', cardLabel:'Karta', ownerLabel:'Egasi', amountLabel:'To‘lov summasi',
+  copyCard:'📋 Kartani nusxalash', copyAmount:'📋 Summani nusxalash', sendCheck:'📩 Chekni yuborish',
+  cardHint:'O‘tkazmadan so‘ng chatga чек/skrin yuboring («Chekni yuborish»), so‘ng «Buyurtma berish» ni bosing.',
+  emptyCart:'Savat bo‘sh'
+},
+en:{
+  delivery:'🚚 Delivery',pickup:'🏃 Pickup',address:'📍 Address',phone:'📞 Phone',
+  cart:'🛒 Cart',order:'Place order',comment:'💬 Comment',search:'🔎 Search',
+  payCard:'💳 Pay by card',
+  cardTitle:'💳 Pay by bank transfer', cardLabel:'Card', ownerLabel:'Owner', amountLabel:'Amount to pay',
+  copyCard:'📋 Copy card', copyAmount:'📋 Copy amount', sendCheck:'📩 Send receipt',
+  cardHint:'After transfer, send a screenshot/receipt in chat (“Send receipt”), then press “Place order”.',
+  emptyCart:'Cart is empty'
+}
 };
 
 const CATS={
@@ -233,7 +345,6 @@ salads:[
     ['Цезарь',35000,'images/cezar.jpg'],
     ['Хрустящий баклажан',45000,'images/baklajan.jpg']
 ],
-
 kebab:[
     ['Молотый',28000,'images/molotiy.jpg'],
     ['Молотый микс',30000,'images/molotiy_mix.jpg'],
@@ -259,14 +370,12 @@ kebab:[
     ['Колбаски молочные 1шт',17000,'images/kolbaski_molochnye.jpg'],
     ['Грибы шампиньоны',15000,'images/griby.jpg']
 ],
-
 national:[
     ['Жиз Биз Баранина 1кг',260000,'images/jiz_biz_baranina_1kg.jpg'],
     ['Жиз Биз Баранина 0.5кг',130000,'images/jiz_biz_baranina_05kg.jpg'],
     ['Жиз Биз из вырезки 1кг',300000,'images/jiz_biz_vyrezka_1kg.jpg'],
     ['Жиз Биз из вырезки 0.5кг',150000,'images/jiz_biz_vyrezka_05kg.jpg']
 ],
-
 grill:[
     ['Стейк куриный',100000,'images/steyk_kuriniy.jpg'],
     ['Стейк Тибон 100гр',20000,'images/steyk_tibon.jpg'],
@@ -276,7 +385,6 @@ grill:[
     ['Говяжья вырезка с овощами 0.5кг',180000,'images/vyrezka_ovoshi_05kg.jpg'],
     ['Говяжья вырезка с овощами 1кг',360000,'images/vyrezka_ovoshi_1kg.jpg']
 ],
-
 first:[
     ['Шурпа',35000,'images/shurpa.jpg'],
     ['Щи зеленые',25000,'images/shi_zelenye.jpg'],
@@ -284,7 +392,6 @@ first:[
     ['Гужа',25000,'images/guzha.jpg'],
     ['Мастава',25000,'images/mastava.jpg']
 ],
-
 drinks:[
     ['Чай черный / зеленый',5000,'images/chay.jpg'],
     ['Чай с лимоном',15000,'images/chay_limon.jpg'],
@@ -302,12 +409,12 @@ drinks:[
     ['Лимонад Дюшес 0.5L',12000,'images/dyushes_05l.jpg'],
     ['Энергетик Saber 0.5L',15000,'images/saber_05l.jpg']
 ],
-
 bread:[
     ['Лепешка Чап чак 1шт',10000,'images/lepyoshka.jpg']
 ]
 };
 
+/* ====== UI RENDER ====== */
 function renderProducts(){
     products.innerHTML='';
     MENU[category]
@@ -322,9 +429,9 @@ function renderProducts(){
             <div class="price">${p} сум</div>
             <div class="name">${n}</div>
             <div class="counter">
-                <button onclick="chg('${n}',-1,this)">−</button>
+                <button onclick="chg('${n}',-1)">−</button>
                 <span id="c_${n}">${cart[n]}</span>
-                <button onclick="chg('${n}',1,this)">+</button>
+                <button onclick="chg('${n}',1)">+</button>
             </div>
         </div>`;
     });
@@ -341,14 +448,25 @@ function renderCats(){
     }
 }
 
+/* ====== CART LOGIC ====== */
 function chg(n,v){
     cart[n]=Math.max(0,(cart[n]||0)+v);
-    document.getElementById('c_'+n).innerText=cart[n];
+    const el=document.getElementById('c_'+n);
+    if(el) el.innerText=cart[n];
     upd();
 }
-function upd(){let s=0;for(let k in cart)s+=cart[k]*price(k);total.innerText=s;}
-function price(n){for(let c in MENU)for(let i of MENU[c])if(i[0]==n)return i[1];}
+function upd(){
+    let s=0;
+    for(let k in cart) s+=cart[k]*price(k);
+    total.innerText=s;
+    amountToPay.innerText=s;
+}
+function price(n){
+    for(let c in MENU) for(let i of MENU[c]) if(i[0]==n) return i[1];
+    return 0;
+}
 
+/* ====== LANG / TYPE / PAYMENT ====== */
 function applyLang(){
     btnDelivery.innerText=TEXT[lang].delivery;
     btnPickup.innerText=TEXT[lang].pickup;
@@ -358,7 +476,25 @@ function applyLang(){
     orderBtn.innerText=TEXT[lang].order;
     comment.placeholder=TEXT[lang].comment;
     search.placeholder=TEXT[lang].search;
+
+    payCard.innerText = TEXT[lang].payCard;
+
+    // Card pay texts
+    cardPayTitle.innerText = TEXT[lang].cardTitle;
+    cardLabel.innerText = TEXT[lang].cardLabel;
+    ownerLabel.innerText = TEXT[lang].ownerLabel;
+    amountLabel.innerText = TEXT[lang].amountLabel;
+    copyCardBtn.innerText = TEXT[lang].copyCard;
+    copyAmountBtn.innerText = TEXT[lang].copyAmount;
+    sendCheckBtn.innerText = TEXT[lang].sendCheck;
+    cardPayHint.innerText = TEXT[lang].cardHint;
+
+    // Card details
+    cardNumberText.innerText = formatCard(CARD_NUMBER_RAW);
+    cardOwnerText.innerText = CARD_OWNER;
+
     renderCats();renderProducts();
+    syncCardPayVisibility();
 }
 
 function setLang(l,b){
@@ -367,25 +503,108 @@ function setLang(l,b){
     b.classList.add('active');
     applyLang();
 }
+
 function setType(t,b){
     type=t;
     document.querySelectorAll('.types .btn').forEach(x=>x.classList.remove('active'));
     b.classList.add('active');
     address.style.display=t==='pickup'?'none':'block';
 }
+
 function setPayment(p){
     payment=p;
     payCash.classList.toggle('active',p==='cash');
     payClick.classList.toggle('active',p==='click');
+    payCard.classList.toggle('active',p==='card');
+    syncCardPayVisibility();
 }
 
+function syncCardPayVisibility(){
+    cardPayBox.style.display = (payment==='card') ? 'block' : 'none';
+    copiedNote.style.display = 'none';
+}
+
+/* ====== Variant B helpers ====== */
+function formatCard(num){
+    const s = String(num||'').replace(/\D/g,'');
+    return s.replace(/(\d{4})(?=\d)/g,'$1 ').trim();
+}
+
+async function copyText(t){
+    try{
+        await navigator.clipboard.writeText(t);
+    }catch(e){
+        // fallback
+        const ta=document.createElement('textarea');
+        ta.value=t;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+    }
+    copiedNote.style.display='block';
+    setTimeout(()=>{copiedNote.style.display='none';}, 1300);
+}
+
+function copyCard(){
+    copyText(CARD_NUMBER_RAW);
+}
+function copyAmount(){
+    copyText(String(total.innerText||0));
+}
+
+function buildOrderText(){
+    const items=[];
+    for(let k in cart) if(cart[k]>0) items.push(`${k} × ${cart[k]}`);
+    const sum = total.innerText||0;
+    const del = (type==='delivery') ? `Доставка: ${address.value||'—'}` : 'Самовывоз';
+    const ph = phone.value||'—';
+    const cmt = comment.value||'—';
+    return `✅ Заказ Radj Shashlik\n\n🧾 Состав:\n- ${items.join('\n- ') || '—'}\n\n💰 Сумма: ${sum} сум\n📞 Телефон: ${ph}\n📍 ${del}\n💳 Оплата: Перевод на карту\n🪪 Карта: ${formatCard(CARD_NUMBER_RAW)}\n👤 Получатель: ${CARD_OWNER}\n💬 Комментарий: ${cmt}\n\n📌 Прикрепите сюда чек/скрин перевода.`;
+}
+
+function openProofChat(){
+    // Открыть чат менеджера, если указан username
+    if(MANAGER_USERNAME && MANAGER_USERNAME.trim()){
+        Telegram.WebApp.openTelegramLink(`https://t.me/${MANAGER_USERNAME.trim()}`);
+        return;
+    }
+    // Иначе — открыть "Поделиться" (пользователь сам выберет чат)
+    const text = buildOrderText();
+    const url = 'https://t.me/share/url?' + new URLSearchParams({url:'', text}).toString();
+    Telegram.WebApp.openTelegramLink(url);
+}
+
+/* ====== SEND ORDER (still via sendData) ====== */
 function sendOrder(){
     const order={};
     for(let k in cart) if(cart[k]>0) order[k]=cart[k];
-    Telegram.WebApp.sendData(JSON.stringify({order,phone:phone.value||'—',comment:comment.value||'—',delivery:type,address:type==='delivery'?address.value:'Самовывоз',total:total.innerText,payment,lang}));
+
+    if(Object.keys(order).length===0){
+        alert(TEXT[lang].emptyCart);
+        return;
+    }
+
+    let finalComment = comment.value || '—';
+    if(payment==='card'){
+        finalComment = (finalComment==='—'?'':finalComment+'\n') + `✅ Оплата: перевод на карту\nКарта: ${formatCard(CARD_NUMBER_RAW)}\nПолучатель: ${CARD_OWNER}\n(чек клиент отправит в чат)`;
+    }
+
+    Telegram.WebApp.sendData(JSON.stringify({
+        order,
+        phone:phone.value||'—',
+        comment:finalComment,
+        delivery:type,
+        address:type==='delivery'?address.value:'Самовывоз',
+        total:total.innerText,
+        payment,
+        card: payment==='card' ? { number: CARD_NUMBER_RAW, owner: CARD_OWNER } : null,
+        lang
+    }));
     Telegram.WebApp.close();
 }
 
+/* ====== INIT ====== */
 applyLang();
 </script>
 
