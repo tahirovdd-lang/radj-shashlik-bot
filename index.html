@@ -5,7 +5,6 @@
 <title>Radj Shashlik</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
 
@@ -212,6 +211,40 @@ textarea{resize:none;}
     padding:10px;
     box-shadow:0 10px 24px rgba(0,0,0,.08);
 }
+
+/* Paid checkbox */
+.paid-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:12px;
+    padding:10px 12px;
+    border-radius:16px;
+    border:1px solid #e1e5ea;
+    background:#fff;
+}
+.paid-row input{ width:18px; height:18px; }
+.paid-text{ font-weight:900; }
+.status-chip{
+    margin-top:10px;
+    display:none;
+    padding:10px 12px;
+    border-radius:16px;
+    background:rgba(46,125,50,.10);
+    color:var(--green);
+    font-weight:900;
+    font-size:12px;
+}
+.warn{
+    display:none;
+    margin-top:10px;
+    padding:10px 12px;
+    border-radius:16px;
+    background:rgba(139,30,30,.10);
+    color:#8B1E1E;
+    font-weight:900;
+    font-size:12px;
+}
 </style>
 </head>
 
@@ -254,7 +287,7 @@ textarea{resize:none;}
         <button class="btn" onclick="setPayment('card')" id="payCard">💳 Онлайн на карту</button>
     </div>
 
-    <!-- VARIANT B: card transfer info + QR -->
+    <!-- VARIANT B: card transfer info + CLICK QR (image) -->
     <div class="cardpay" id="cardPayBox">
         <div style="font-weight:900;font-size:14px" id="cardPayTitle">💳 Оплата переводом на карту</div>
 
@@ -279,12 +312,24 @@ textarea{resize:none;}
 
         <div class="qrwrap">
             <div class="qrbox">
-                <canvas id="qrCanvas" width="220" height="220"></canvas>
+                <!-- ✅ твой загруженный QR от CLICK -->
+                <img id="clickQrImg"
+                     src="images/click_qr.png"
+                     alt="CLICK QR"
+                     style="width:220px;height:220px;border-radius:12px;display:block;object-fit:contain;">
             </div>
         </div>
         <div class="small" style="text-align:center;margin-top:8px" id="qrHint">
-            Отсканируйте QR в Payme/Click/банковском приложении и сделайте перевод.
+            Отсканируйте QR в приложении CLICK и переведите сумму заказа (сумму укажите как в корзине).
         </div>
+
+        <div class="paid-row">
+            <input type="checkbox" id="paidChk" onchange="onPaidToggle()">
+            <div class="paid-text" id="paidText">Я оплатил ✅</div>
+        </div>
+
+        <div class="status-chip" id="payStatus">🟢 Ожидаем подтверждение оплаты</div>
+        <div class="warn" id="payWarn">⚠️ Поставьте галочку «Я оплатил ✅», чтобы отправить заказ.</div>
 
         <div class="small" id="cardPayHint" style="margin-top:10px">
             После перевода отправьте скрин/чек в чат (кнопка «Отправить чек»), затем нажмите «Оформить заказ».
@@ -314,7 +359,10 @@ ru:{
   payCard:'💳 Онлайн на карту',
   cardTitle:'💳 Оплата переводом на карту', cardLabel:'Карта', ownerLabel:'Владелец', amountLabel:'Сумма к оплате',
   copyCard:'📋 Скопировать карту', copyAmount:'📋 Скопировать сумму', sendCheck:'📩 Отправить чек',
-  qrHint:'Отсканируйте QR в Payme/Click/банковском приложении и сделайте перевод.',
+  qrHint:'Отсканируйте QR в приложении CLICK и переведите сумму заказа (сумму укажите как в корзине).',
+  paid:'Я оплатил ✅',
+  status:'🟢 Ожидаем подтверждение оплаты',
+  warnPaid:'⚠️ Поставьте галочку «Я оплатил ✅», чтобы отправить заказ.',
   cardHint:'После перевода отправьте скрин/чек в чат (кнопка «Отправить чек»), затем нажмите «Оформить заказ».',
   emptyCart:'Корзина пустая'
 },
@@ -324,7 +372,10 @@ uz:{
   payCard:'💳 Karta orqali online',
   cardTitle:'💳 Kartaga o‘tkazma orqali to‘lov', cardLabel:'Karta', ownerLabel:'Egasi', amountLabel:'To‘lov summasi',
   copyCard:'📋 Kartani nusxalash', copyAmount:'📋 Summani nusxalash', sendCheck:'📩 Chekni yuborish',
-  qrHint:'QR-ni Payme/Click/bank ilovasida skaner qiling va o‘tkazma qiling.',
+  qrHint:'CLICK ilovasida QR-ni skaner qiling va savatdagi summani kiriting.',
+  paid:'To‘ladim ✅',
+  status:'🟢 To‘lov tasdiqlanishi kutilmoqda',
+  warnPaid:'⚠️ Buyurtma yuborish uchun «To‘ladim ✅» ni belgilang.',
   cardHint:'O‘tkazmadan so‘ng chatga чек/skrin yuboring («Chekni yuborish»), so‘ng «Buyurtma berish» ni bosing.',
   emptyCart:'Savat bo‘sh'
 },
@@ -334,7 +385,10 @@ en:{
   payCard:'💳 Pay by card',
   cardTitle:'💳 Pay by bank transfer', cardLabel:'Card', ownerLabel:'Owner', amountLabel:'Amount to pay',
   copyCard:'📋 Copy card', copyAmount:'📋 Copy amount', sendCheck:'📩 Send receipt',
-  qrHint:'Scan QR in Payme/Click/banking app and make a transfer.',
+  qrHint:'Scan the QR in CLICK and enter the same amount as in the cart.',
+  paid:'I paid ✅',
+  status:'🟢 Waiting for payment confirmation',
+  warnPaid:'⚠️ Tick “I paid ✅” to send the order.',
   cardHint:'After transfer, send a screenshot/receipt in chat (“Send receipt”), then press “Place order”.',
   emptyCart:'Cart is empty'
 }
@@ -478,28 +532,10 @@ function upd(){
     for(let k in cart) s+=cart[k]*price(k);
     total.innerText=s;
     amountToPay.innerText=s;
-
-    if(payment==='card') drawQR();
 }
 function price(n){
     for(let c in MENU) for(let i of MENU[c]) if(i[0]==n) return i[1];
     return 0;
-}
-
-/* ====== QR DRAW ====== */
-function drawQR(){
-    if(!window.QRCode) return;
-    const amount = Number(total.innerText || 0);
-
-    // QR payload: инфо для клиента (карта/получатель/сумма)
-    const payload = `CARD:${CARD_NUMBER_RAW}\nOWNER:${CARD_OWNER}\nAMOUNT:${amount}`;
-
-    const canvas = document.getElementById('qrCanvas');
-    if(!canvas) return;
-
-    QRCode.toCanvas(canvas, payload, { width: 220, margin: 1 }, function (error) {
-        if (error) console.error(error);
-    });
 }
 
 /* ====== LANG / TYPE / PAYMENT ====== */
@@ -525,6 +561,10 @@ function applyLang(){
     sendCheckBtn.innerText = TEXT[lang].sendCheck;
     cardPayHint.innerText = TEXT[lang].cardHint;
     qrHint.innerText = TEXT[lang].qrHint;
+
+    paidText.innerText = TEXT[lang].paid;
+    payStatus.innerText = TEXT[lang].status;
+    payWarn.innerText = TEXT[lang].warnPaid;
 
     // Card details
     cardNumberText.innerText = formatCard(CARD_NUMBER_RAW);
@@ -553,14 +593,23 @@ function setPayment(p){
     payCash.classList.toggle('active',p==='cash');
     payClick.classList.toggle('active',p==='click');
     payCard.classList.toggle('active',p==='card');
-    syncCardPayVisibility();
 
-    if(p==='card') setTimeout(drawQR, 0);
+    // При смене метода оплаты — сбрасываем подтверждение оплаты
+    if(p!=='card'){
+        paidChk.checked = false;
+        payWarn.style.display = 'none';
+    }
+    syncCardPayVisibility();
 }
 
 function syncCardPayVisibility(){
-    cardPayBox.style.display = (payment==='card') ? 'block' : 'none';
-    copiedNote.style.display = 'none';
+    const show = (payment==='card');
+    cardPayBox.style.display = show ? 'block' : 'none';
+    payStatus.style.display = show ? 'block' : 'none';
+}
+
+function onPaidToggle(){
+    if(paidChk.checked) payWarn.style.display = 'none';
 }
 
 /* ====== Variant B helpers ====== */
@@ -587,22 +636,11 @@ async function copyText(t){
 function copyCard(){ copyText(CARD_NUMBER_RAW); }
 function copyAmount(){ copyText(String(total.innerText||0)); }
 
-function buildOrderText(){
-    const items=[];
-    for(let k in cart) if(cart[k]>0) items.push(`${k} × ${cart[k]}`);
-    const sum = total.innerText||0;
-    const del = (type==='delivery') ? `Доставка: ${address.value||'—'}` : 'Самовывоз';
-    const ph = phone.value||'—';
-    const cmt = comment.value||'—';
-    return `✅ Заказ Radj Shashlik\n\n🧾 Состав:\n- ${items.join('\n- ') || '—'}\n\n💰 Сумма: ${sum} сум\n📞 Телефон: ${ph}\n📍 ${del}\n💳 Оплата: Перевод на карту\n🪪 Карта: ${formatCard(CARD_NUMBER_RAW)}\n👤 Получатель: ${CARD_OWNER}\n💬 Комментарий: ${cmt}\n\n📌 Прикрепите сюда чек/скрин перевода.`;
-}
-
 function openProofChat(){
-    // ✅ Открываем чат менеджера напрямую
     Telegram.WebApp.openTelegramLink(`https://t.me/${MANAGER_USERNAME}`);
 }
 
-/* ====== SEND ORDER (still via sendData) ====== */
+/* ====== SEND ORDER ====== */
 function sendOrder(){
     const order={};
     for(let k in cart) if(cart[k]>0) order[k]=cart[k];
@@ -612,10 +650,16 @@ function sendOrder(){
         return;
     }
 
+    // 🔒 Требуем подтверждение "Я оплатил", если выбран перевод на карту
+    if(payment==='card' && !paidChk.checked){
+        payWarn.style.display = 'block';
+        return;
+    }
+
     let finalComment = comment.value || '—';
     if(payment==='card'){
         finalComment = (finalComment==='—'?'':finalComment+'\n') +
-          `✅ Оплата: перевод на карту\nКарта: ${formatCard(CARD_NUMBER_RAW)}\nПолучатель: ${CARD_OWNER}\n(чек клиент отправляет в чат @${MANAGER_USERNAME})`;
+          `✅ Оплата: перевод через CLICK QR / на карту\nКарта: ${formatCard(CARD_NUMBER_RAW)}\nПолучатель: ${CARD_OWNER}\nЧек: клиент отправляет в чат @${MANAGER_USERNAME}\nСтатус: Ожидаем подтверждение`;
     }
 
     Telegram.WebApp.sendData(JSON.stringify({
@@ -626,7 +670,8 @@ function sendOrder(){
         address:type==='delivery'?address.value:'Самовывоз',
         total:total.innerText,
         payment,
-        card: payment==='card' ? { number: CARD_NUMBER_RAW, owner: CARD_OWNER } : null,
+        paid_confirmed: (payment==='card') ? true : false,
+        card: payment==='card' ? { number: CARD_NUMBER_RAW, owner: CARD_OWNER, qr_image: "images/click_qr.png" } : null,
         lang
     }));
     Telegram.WebApp.close();
